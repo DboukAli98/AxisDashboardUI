@@ -19,11 +19,29 @@ import AppLayout from "./layout/AppLayout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
+import UsersManagement from "./pages/Admin/UsersManagement";
+import Items from "./pages/Admin/Items";
+import Cards from "./pages/Admin/Cards";
+import CardTypes from "./pages/Admin/CardTypes";
+import Game from "./pages/Admin/Game";
+import GameSettings from "./pages/Admin/GameSettings";
+import GameSessions from "./pages/Admin/GameSessions";
+import Transactions from "./pages/Admin/Transactions";
+import Rooms from "./pages/Admin/Rooms";
+import Orders from "./pages/Admin/Orders";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!authenticated) return <Navigate to="/signin" replace />;
+  return children;
+};
+
+const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { hasRole, loading, authenticated } = useAuth();
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!authenticated) return <Navigate to="/signin" replace />;
+  if (!hasRole("admin")) return <Navigate to="/" replace />;
   return children;
 };
 
@@ -60,6 +78,18 @@ export default function App() {
               {/* Charts */}
               <Route path="/line-chart" element={<LineChart />} />
               <Route path="/bar-chart" element={<BarChart />} />
+
+              {/* Admin (guard inside element) */}
+              <Route path="/admin/users" element={<AdminRoute><UsersManagement /></AdminRoute>} />
+              <Route path="/admin/items" element={<AdminRoute><Items /></AdminRoute>} />
+              <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
+              <Route path="/admin/cards" element={<AdminRoute><Cards /></AdminRoute>} />
+              <Route path="/admin/card-types" element={<AdminRoute><CardTypes /></AdminRoute>} />
+              <Route path="/admin/game" element={<AdminRoute><Game /></AdminRoute>} />
+              <Route path="/admin/game-settings" element={<AdminRoute><GameSettings /></AdminRoute>} />
+              <Route path="/admin/game-sessions" element={<AdminRoute><GameSessions /></AdminRoute>} />
+              <Route path="/admin/transactions" element={<AdminRoute><Transactions /></AdminRoute>} />
+              <Route path="/admin/rooms" element={<AdminRoute><Rooms /></AdminRoute>} />
             </Route>
 
             {/* Auth Layout */}
