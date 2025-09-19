@@ -22,7 +22,7 @@ import {
     TableRow,
 } from "../../components/ui/table";
 
-export default function Items() {
+export default function CashierItems() {
     const [items, setItems] = useState<ItemDto[]>([]);
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [loading, setLoading] = useState(false);
@@ -132,7 +132,7 @@ export default function Items() {
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Items</h1>
+            <h1 className="text-2xl font-semibold mb-4">Items (Cashier)</h1>
 
             <div className="mb-4 flex items-center gap-3">
                 <button className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded" onClick={openCreate}>

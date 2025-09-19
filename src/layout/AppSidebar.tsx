@@ -152,11 +152,20 @@ const AppSidebar: React.FC = () => {
         { icon: <TableIcon />, name: "Rooms", path: "/admin/rooms" },
       ];
     }
+    // Cashier: show Items and Orders as separate top-level links
+    if (hasRole("cashier")) {
+      return [
+        { icon: <BoxCubeIcon />, name: "Items", path: "/cashier/items" },
+        { icon: <TableIcon />, name: "Orders", path: "/cashier/orders" },
+      ];
+    }
+
     return baseNavItems; // non-admin retains original navigation
   }, [hasRole]);
 
   const computedOthersItems = useMemo(() => {
-    if (hasRole("admin")) return []; // hide others section for admin-only view
+    // Hide others section for admin and cashier
+    if (hasRole("admin") || hasRole("cashier")) return [];
     return baseOthersItems;
   }, [hasRole]);
 

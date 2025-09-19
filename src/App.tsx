@@ -29,6 +29,8 @@ import GameSessions from "./pages/Admin/GameSessions";
 import Transactions from "./pages/Admin/Transactions";
 import Rooms from "./pages/Admin/Rooms";
 import Orders from "./pages/Admin/Orders";
+import CashierItems from './pages/Cashier/Items';
+import CashierOrders from './pages/Cashier/Orders';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -42,6 +44,14 @@ const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) =>
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!authenticated) return <Navigate to="/signin" replace />;
   if (!hasRole("admin")) return <Navigate to="/" replace />;
+  return children;
+};
+
+const CashierRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { hasRole, loading, authenticated } = useAuth();
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!authenticated) return <Navigate to="/signin" replace />;
+  if (!hasRole("cashier")) return <Navigate to="/" replace />;
   return children;
 };
 
@@ -83,6 +93,8 @@ export default function App() {
               <Route path="/admin/users" element={<AdminRoute><UsersManagement /></AdminRoute>} />
               <Route path="/admin/items" element={<AdminRoute><Items /></AdminRoute>} />
               <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
+              <Route path="/cashier/items" element={<CashierRoute><CashierItems /></CashierRoute>} />
+              <Route path="/cashier/orders" element={<CashierRoute><CashierOrders /></CashierRoute>} />
               <Route path="/admin/cards" element={<AdminRoute><Cards /></AdminRoute>} />
               <Route path="/admin/card-types" element={<AdminRoute><CardTypes /></AdminRoute>} />
               <Route path="/admin/game" element={<AdminRoute><Game /></AdminRoute>} />

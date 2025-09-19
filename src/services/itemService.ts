@@ -8,12 +8,18 @@ export type ItemDto = {
   type: string;
   categoryId: string | null;
   gameId: string | null;
+  statusId?: string | null;
 };
 
 const basePath = "/item";
 
-export async function getItems(): Promise<ItemDto[]> {
-  const res = await api.get<ItemDto[]>(basePath);
+export type ItemListResponse = {
+  totalCount: number;
+  items: ItemDto[];
+};
+
+export async function getItems(): Promise<ItemListResponse> {
+  const res = await api.get<ItemListResponse>(basePath);
   return res.data;
 }
 
