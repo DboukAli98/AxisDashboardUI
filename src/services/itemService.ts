@@ -18,8 +18,8 @@ export type ItemListResponse = {
   items: ItemDto[];
 };
 
-export async function getItems(): Promise<ItemListResponse> {
-  const res = await api.get<ItemListResponse>(basePath);
+export async function getItems(page = 1, pageSize = 10): Promise<ItemListResponse> {
+  const res = await api.get<ItemListResponse>(`${basePath}?Page=${page}&PageSize=${pageSize}`);
   return res.data;
 }
 

@@ -27,6 +27,9 @@ export default function Items() {
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalCount, setTotalCount] = useState<number | null>(null);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editing, setEditing] = useState<ItemDto | null>(null);
@@ -59,10 +62,11 @@ export default function Items() {
     useEffect(() => {
         let mounted = true;
         setLoading(true);
-        getItems()
+        getItems(page, pageSize)
             .then((data: ItemListResponse) => {
                 if (!mounted) return;
                 setItems(data.items || []);
+                setTotalCount(data.totalCount ?? null);
             })
             .catch((err) => {
                 if (!mounted) return;
@@ -76,7 +80,7 @@ export default function Items() {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [page, pageSize]);
 
     useEffect(() => {
         let mounted = true;
@@ -196,6 +200,22 @@ export default function Items() {
                     </div>
                 </div>
             )}
+
+            {/* Pagination controls */}
+            <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${items.length} of ${totalCount}` : ''}</div>
+                <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">Page size</label>
+                    <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="input h-9">
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                    </select>
+                    <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+                    <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
+                </div>
+            </div>
 
             <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Item" : "Create Item"}>
                 <div className="flex flex-col gap-3">

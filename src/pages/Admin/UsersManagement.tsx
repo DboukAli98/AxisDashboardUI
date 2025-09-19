@@ -4,13 +4,17 @@ import { useModal } from "../../hooks/useModal";
 import userService, { UserDto, RegisterRequest } from "../../services/userService";
 import { updateUser } from "../../services/userService";
 import Loader from "../../components/ui/Loader";
+import Label from "../../components/form/Label";
+import Input from "../../components/form/input/InputField";
+import Select from "../../components/form/Select";
 
 export default function UsersManagement() {
     const { isOpen, openModal, closeModal } = useModal();
     const [users, setUsers] = useState<UserDto[]>([]);
     const [loading, setLoading] = useState(false);
-    const [page] = useState(1);
-    const [pageSize] = useState(10);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
 
     // form
     const [email, setEmail] = useState("");
@@ -26,6 +30,7 @@ export default function UsersManagement() {
         try {
             const res = await userService.getUsers(page, pageSize);
             setUsers(res.items);
+            setTotalCount(res.totalCount ?? 0);
         } catch (e: unknown) {
             console.error(e);
             let msg = 'Failed to load users';
@@ -105,28 +110,51 @@ export default function UsersManagement() {
             {loading ? (
                 <Loader />
             ) : (
-                <div className="overflow-x-auto bg-white rounded shadow">
-                    <table className="min-w-full divide-y">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display Name</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y">
-                            {users.map((u) => (
-                                <tr key={u.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">{u.email}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{u.displayName}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{u.roles.join(', ')}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <button className="text-sm text-blue-600" onClick={() => handleEdit(u)}>Edit</button>
-                                    </td>
+                <div className="bg-white rounded shadow">
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
+                                    <th className="px-6 py-3" />
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="bg-white divide-y">
+                                {users.map((u) => (
+                                    <tr key={u.id}>
+                                        <td className="px-6 py-4 whitespace-nowrap">{u.email}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">{u.displayName}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">{u.roles.join(', ')}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <button className="text-sm text-blue-600" onClick={() => handleEdit(u)}>Edit</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="flex items-center justify-between px-4 py-3 border-t">
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm text-gray-600">Rows:</label>
+                            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="border rounded px-2 py-1 text-sm">
+                                <option value={5}>5</option>
+                                <option value={10}>10</option>
+                                <option value={25}>25</option>
+                                <option value={50}>50</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="text-sm text-gray-600">Showing {Math.min((page - 1) * pageSize + 1, totalCount || 0)} - {Math.min(page * pageSize, totalCount || 0)} of {totalCount}</div>
+                            <div className="flex items-center gap-2">
+                                <button className="px-2 py-1 border rounded disabled:opacity-50" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+                                <button className="px-2 py-1 border rounded disabled:opacity-50" onClick={() => setPage((p) => p + 1)} disabled={page * pageSize >= totalCount}>Next</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -134,23 +162,25 @@ export default function UsersManagement() {
                 <div className="space-y-4">
                     {message && <div className="text-sm text-red-600">{message}</div>}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <input value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 input" />
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="info@gmail.com" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Password</label>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 input" />
+                        <Label htmlFor="password">Password</Label>
+                        <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Display Name</label>
-                        <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="mt-1 input" />
+                        <Label htmlFor="displayName">Display Name</Label>
+                        <Input id="displayName" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Display name" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Role</label>
-                        <select value={roleName} onChange={(e) => setRoleName(e.target.value)} className="mt-1 input">
-                            <option value="cashier">cashier</option>
-                            <option value="admin">admin</option>
-                        </select>
+                        <Label>Role</Label>
+                        <Select
+                            options={[{ value: 'cashier', label: 'cashier' }, { value: 'admin', label: 'admin' }]}
+                            placeholder="Select a role"
+                            defaultValue={roleName}
+                            onChange={(v) => setRoleName(v)}
+                        />
                     </div>
 
                     <div className="flex justify-end gap-2">

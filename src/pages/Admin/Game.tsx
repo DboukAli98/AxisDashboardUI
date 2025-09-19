@@ -6,6 +6,8 @@ import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import DeleteIconButton from "../../components/ui/DeleteIconButton";
 import { deleteGame } from "../../services/gameService";
+import Label from "../../components/form/Label";
+import Input from "../../components/form/input/InputField";
 import {
     Table,
     TableBody,
@@ -43,7 +45,7 @@ export default function Game() {
         getGames()
             .then((data) => {
                 if (!mounted) return;
-                setGames(data);
+                setGames(data.items);
             })
             .catch((err) => {
                 if (!mounted) return;
@@ -72,8 +74,14 @@ export default function Game() {
                 </button>
                 <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Create Game">
                     <div className="flex flex-col gap-3">
-                        <input className="px-2 py-1 border rounded" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-                        <input className="px-2 py-1 border rounded" placeholder="Type" value={type} onChange={(e) => setType(e.target.value)} />
+                        <div>
+                            <Label htmlFor="game-name">Name</Label>
+                            <Input id="game-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+                        </div>
+                        <div>
+                            <Label htmlFor="game-type">Type</Label>
+                            <Input id="game-type" value={type} onChange={(e) => setType(e.target.value)} placeholder="Type" />
+                        </div>
                         <div className="flex items-center gap-2">
                             <button
                                 className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2"

@@ -1,4 +1,4 @@
-import api from "../services/api";
+import api from './api';
 
 export type GameDto = {
   id: string;
@@ -10,8 +10,13 @@ export type GameDto = {
 
 const basePath = "/game";
 
-export async function getGames(): Promise<GameDto[]> {
-  const res = await api.get<GameDto[]>(basePath);
+export type GameListResponse = {
+  totalCount: number;
+  items: GameDto[];
+};
+
+export async function getGames(): Promise<GameListResponse> {
+  const res = await api.get<GameListResponse>(basePath);
   return res.data;
 }
 

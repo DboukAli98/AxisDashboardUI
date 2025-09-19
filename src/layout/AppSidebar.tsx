@@ -131,14 +131,14 @@ const AppSidebar: React.FC = () => {
             { name: "Orders", path: "/admin/orders" },
           ],
         },
-        {
-          icon: <PageIcon />,
-          name: "Cards Management",
-          subItems: [
-            { name: "Cards", path: "/admin/cards" },
-            { name: "Card Types", path: "/admin/card-types" },
-          ],
-        },
+        // {
+        //   icon: <PageIcon />,
+        //   name: "Cards Management",
+        //   subItems: [
+        //     { name: "Cards", path: "/admin/cards" },
+        //     { name: "Card Types", path: "/admin/card-types" },
+        //   ],
+        // },
         {
           icon: <PlugInIcon />,
           name: "Game",
