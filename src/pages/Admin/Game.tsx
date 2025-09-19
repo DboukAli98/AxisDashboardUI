@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { getGames, GameDto } from "../../services/gameService";
 import { createGame } from "../../services/gameService";
+import { updateGame } from "../../services/gameService";
 import Modal from "../../components/ui/Modal";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import DeleteIconButton from "../../components/ui/DeleteIconButton";
+import StatusToggle from '../../components/ui/StatusToggle';
+import { getStatusName, STATUS_ENABLED, STATUS_DISABLED } from '../../services/statuses';
 import { deleteGame } from "../../services/gameService";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
+import Select from "../../components/form/Select";
+import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import {
     Table,
     TableBody,
@@ -20,9 +25,15 @@ export default function Game() {
     const [games, setGames] = useState<GameDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalCount, setTotalCount] = useState<number | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [name, setName] = useState("");
     const [type, setType] = useState("");
+    const [statusId, setStatusId] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -39,13 +50,28 @@ export default function Game() {
         return () => clearTimeout(t);
     }, [notification]);
 
+    // load categories for game types
+    useEffect(() => {
+        let mounted = true;
+        getCategoriesByType('game', 1, 50)
+            .then((res) => {
+                if (!mounted) return;
+                setCategories(res.items || []);
+            })
+            .catch(() => {
+                // ignore category load errors for now
+            });
+        return () => { mounted = false; };
+    }, []);
+
     useEffect(() => {
         let mounted = true;
         setLoading(true);
-        getGames()
+        getGames(page, pageSize)
             .then((data) => {
                 if (!mounted) return;
-                setGames(data.items);
+                setGames(data.items || []);
+                setTotalCount(data.totalCount ?? null);
             })
             .catch((err) => {
                 if (!mounted) return;
@@ -59,7 +85,7 @@ export default function Game() {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [page, pageSize]);
 
     return (
         <div className="p-6">
@@ -79,24 +105,44 @@ export default function Game() {
                             <Input id="game-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
                         </div>
                         <div>
-                            <Label htmlFor="game-type">Type</Label>
-                            <Input id="game-type" value={type} onChange={(e) => setType(e.target.value)} placeholder="Type" />
+                            <Label>Type</Label>
+                            <Select
+                                options={categories.map((c) => ({ value: c.name, label: c.name }))}
+                                placeholder="Select a type"
+                                defaultValue={type}
+                                onChange={(v) => setType(v)}
+                            />
                         </div>
+                        <div>
+                            <label className="text-sm text-gray-600">Status</label>
+                            <StatusToggle value={statusId} onChange={(id) => setStatusId(id)} />
+                        </div>
+
                         <div className="flex items-center gap-2">
                             <button
                                 className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2"
                                 onClick={async () => {
                                     setSubmitting(true);
                                     try {
-                                        const created = await createGame({ name, type });
-                                        setGames((g) => [created, ...g]);
+                                        if (editingId) {
+                                            const updated = await updateGame(editingId, { name, type, statusId });
+                                            // re-fetch list to get server-side ordering and latest data
+                                            const refreshed = await getGames();
+                                            setGames(refreshed.items || []);
+                                            setNotification({ variant: 'success', title: 'Updated', message: `Game '${updated.name}' updated` });
+                                        } else {
+                                            const created = await createGame({ name, type, statusId });
+                                            setGames((g) => [created, ...g]);
+                                            setNotification({ variant: 'success', title: 'Created', message: `Game '${created.name}' created` });
+                                        }
                                         setName("");
                                         setType("");
+                                        setStatusId(null);
+                                        setEditingId(null);
                                         setShowForm(false);
                                         setError(null);
-                                        setNotification({ variant: "success", title: "Created", message: `Game '${created.name}' created` });
                                     } catch (err: unknown) {
-                                        let message = "Failed to create game";
+                                        let message = editingId ? "Failed to update game" : "Failed to create game";
                                         if (err && typeof err === "object") {
                                             const maybe = err as { message?: unknown };
                                             if (typeof maybe.message === "string") message = maybe.message;
@@ -104,7 +150,7 @@ export default function Game() {
                                             message = err;
                                         }
                                         setError(message);
-                                        setNotification({ variant: "error", title: "Create failed", message });
+                                        setNotification({ variant: "error", title: editingId ? "Update failed" : "Create failed", message });
                                     } finally {
                                         setSubmitting(false);
                                     }
@@ -133,6 +179,7 @@ export default function Game() {
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Type</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Created</TableCell>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
                                 </TableRow>
                             </TableHeader>
@@ -146,7 +193,30 @@ export default function Game() {
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{g.type}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{new Date(g.createdOn).toLocaleString()}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                            <DeleteIconButton onClick={() => setDeleteId(g.id)} />
+                                            {(() => {
+                                                const id = g.statusId;
+                                                const name = getStatusName(id) ?? id ?? '-';
+                                                if (id === STATUS_ENABLED) {
+                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">{name}</span>;
+                                                }
+                                                if (id === STATUS_DISABLED) {
+                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">{name}</span>;
+                                                }
+                                                return <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800 text-xs">{name}</span>;
+                                            })()}
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                            <div className="flex items-center gap-2">
+                                                <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => {
+                                                    // open edit
+                                                    setEditingId(g.id);
+                                                    setName(g.name);
+                                                    setType(g.type);
+                                                    setStatusId(g.statusId ?? null);
+                                                    setShowForm(true);
+                                                }}>Edit</button>
+                                                <DeleteIconButton onClick={() => setDeleteId(g.id)} />
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -155,6 +225,22 @@ export default function Game() {
                     </div>
                 </div>
             )}
+
+            {/* Pagination controls */}
+            <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
+                <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">Page size</label>
+                    <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="input h-9">
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                    </select>
+                    <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+                    <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
+                </div>
+            </div>
 
             <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm delete">
                 <div className="space-y-4">

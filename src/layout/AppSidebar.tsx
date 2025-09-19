@@ -145,7 +145,7 @@ const AppSidebar: React.FC = () => {
           subItems: [
             { name: "Overview", path: "/admin/game" },
             { name: "Settings", path: "/admin/game-settings" },
-            { name: "Sessions", path: "/admin/game-sessions" },
+            // { name: "Sessions", path: "/admin/game-sessions" },
           ],
         },
         { icon: <PieChartIcon />, name: "Transactions", path: "/admin/transactions" },
@@ -347,7 +347,7 @@ const AppSidebar: React.FC = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
+        className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-center"
           }`}
       >
         <Link to="/">
@@ -355,22 +355,17 @@ const AppSidebar: React.FC = () => {
             <>
               <img
                 className="dark:hidden"
-                src="/images/logo/logo.svg"
+                src="/images/logo/axis-logo.jpeg"
                 alt="Logo"
                 width={150}
                 height={40}
+
               />
-              <img
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
+
             </>
           ) : (
             <img
-              src="/images/logo/logo-icon.svg"
+              src="/images/logo/axis-logo-chrinked.jpeg"
               alt="Logo"
               width={32}
               height={32}
