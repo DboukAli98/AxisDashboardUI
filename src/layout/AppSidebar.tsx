@@ -354,7 +354,7 @@ const AppSidebar: React.FC = () => {
           {isExpanded || isHovered || isMobileOpen ? (
             <>
               <img
-                className="dark:hidden"
+                className="dark"
                 src="/images/logo/axis-logo.jpeg"
                 alt="Logo"
                 width={150}
