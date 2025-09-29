@@ -62,36 +62,7 @@ const baseNavItems: NavItem[] = [
   },
 ];
 
-const baseOthersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
-  },
-];
+const baseOthersItems: NavItem[] = [];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
@@ -114,8 +85,8 @@ const AppSidebar: React.FC = () => {
   );
 
   const computedNavItems = useMemo(() => {
+    // Admin users get full admin navigation
     if (hasRole("admin")) {
-      // Admin-focused menu groups
       return [
         {
           icon: <GridIcon />,
@@ -131,27 +102,29 @@ const AppSidebar: React.FC = () => {
             { name: "Orders", path: "/admin/orders" },
           ],
         },
-        // {
-        //   icon: <PageIcon />,
-        //   name: "Cards Management",
-        //   subItems: [
-        //     { name: "Cards", path: "/admin/cards" },
-        //     { name: "Card Types", path: "/admin/card-types" },
-        //   ],
-        // },
         {
           icon: <PlugInIcon />,
           name: "Game",
           subItems: [
             { name: "Overview", path: "/admin/game" },
             { name: "Settings", path: "/admin/game-settings" },
-            // { name: "Sessions", path: "/admin/game-sessions" },
           ],
         },
         { icon: <PieChartIcon />, name: "Transactions", path: "/admin/transactions" },
         { icon: <TableIcon />, name: "Rooms", path: "/admin/rooms" },
       ];
     }
+
+    // GameCashie: limited menu for game cashier operations
+    if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier")) {
+      return [
+        // use non-admin paths so the GameCashie role isn't blocked by AdminRoute
+        { icon: <PlugInIcon />, name: "Game Session", path: "/game/sessions" },
+        { icon: <PieChartIcon />, name: "Transactions", path: "/gamecashier/transactions" },
+        { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
+      ];
+    }
+
     // Cashier: show Items and Orders as separate top-level links
     if (hasRole("cashier")) {
       return [

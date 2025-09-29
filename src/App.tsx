@@ -55,6 +55,14 @@ const CashierRoute: React.FC<{ children: React.ReactElement }> = ({ children }) 
   return children;
 };
 
+const GameCashieRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { hasRole, loading, authenticated } = useAuth();
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!authenticated) return <Navigate to="/signin" replace />;
+  if (!(hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier"))) return <Navigate to="/" replace />;
+  return children;
+};
+
 export default function App() {
   return (
     <>
@@ -102,6 +110,9 @@ export default function App() {
               <Route path="/admin/game-sessions" element={<AdminRoute><GameSessions /></AdminRoute>} />
               <Route path="/admin/transactions" element={<AdminRoute><Transactions /></AdminRoute>} />
               <Route path="/admin/rooms" element={<AdminRoute><Rooms /></AdminRoute>} />
+              {/* GameCashie routes (non-admin paths) */}
+              <Route path="/gamecashier/transactions" element={<GameCashieRoute><Transactions /></GameCashieRoute>} />
+              <Route path="/gamecashier/rooms" element={<GameCashieRoute><Rooms /></GameCashieRoute>} />
             </Route>
 
             {/* Auth Layout */}

@@ -30,7 +30,7 @@ export default function Game() {
     const [totalCount, setTotalCount] = useState<number | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [name, setName] = useState("");
-    const [type, setType] = useState("");
+    const [categoryId, setCategoryId] = useState("");
     const [statusId, setStatusId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [categories, setCategories] = useState<CategoryDto[]>([]);
@@ -98,19 +98,19 @@ export default function Game() {
                 >
                     Add Game
                 </button>
-                <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Create Game">
+                <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={editingId ? "Edit Game" : "Create Game"}>
                     <div className="flex flex-col gap-3">
                         <div>
                             <Label htmlFor="game-name">Name</Label>
                             <Input id="game-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
                         </div>
                         <div>
-                            <Label>Type</Label>
+                            <Label>Category</Label>
                             <Select
-                                options={categories.map((c) => ({ value: c.name, label: c.name }))}
-                                placeholder="Select a type"
-                                defaultValue={type}
-                                onChange={(v) => setType(v)}
+                                options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                                placeholder="Select a category"
+                                defaultValue={categoryId}
+                                onChange={(v) => setCategoryId(v)}
                             />
                         </div>
                         <div>
@@ -125,18 +125,18 @@ export default function Game() {
                                     setSubmitting(true);
                                     try {
                                         if (editingId) {
-                                            const updated = await updateGame(editingId, { name, type, statusId });
+                                            const updated = await updateGame(editingId, { name, categoryId, statusId });
                                             // re-fetch list to get server-side ordering and latest data
                                             const refreshed = await getGames();
                                             setGames(refreshed.items || []);
                                             setNotification({ variant: 'success', title: 'Updated', message: `Game '${updated.name}' updated` });
                                         } else {
-                                            const created = await createGame({ name, type, statusId });
+                                            const created = await createGame({ name, categoryId, statusId });
                                             setGames((g) => [created, ...g]);
                                             setNotification({ variant: 'success', title: 'Created', message: `Game '${created.name}' created` });
                                         }
                                         setName("");
-                                        setType("");
+                                        setCategoryId("");
                                         setStatusId(null);
                                         setEditingId(null);
                                         setShowForm(false);
@@ -156,7 +156,7 @@ export default function Game() {
                                     }
                                 }}
                             >
-                                {submitting ? <Loader size={16} /> : "Create"}
+                                {submitting ? <Loader size={16} /> : (editingId ? 'Save' : 'Create')}
                             </button>
                             <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setShowForm(false)}>Cancel</button>
                         </div>
@@ -190,7 +190,7 @@ export default function Game() {
                                         <TableCell className="px-5 py-4 sm:px-6 text-start">
                                             <div className="font-medium text-gray-800 dark:text-white/90">{g.name}</div>
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{g.type}</TableCell>
+                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{g.categoryName ?? (categories.find(cat => cat.id === g.categoryId)?.name) ?? g.categoryId ?? '—'}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{new Date(g.createdOn).toLocaleString()}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                             {(() => {
@@ -211,7 +211,7 @@ export default function Game() {
                                                     // open edit
                                                     setEditingId(g.id);
                                                     setName(g.name);
-                                                    setType(g.type);
+                                                    setCategoryId(g.categoryId ?? "");
                                                     setStatusId(g.statusId ?? null);
                                                     setShowForm(true);
                                                 }}>Edit</button>
