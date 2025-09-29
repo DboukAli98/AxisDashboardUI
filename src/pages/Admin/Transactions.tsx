@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getTransactions, TransactionItem } from '../../services/transactionService';
+import { getStatusName, STATUS_ENABLED } from '../../services/statuses';
 
 export default function Transactions() {
     const [items, setItems] = useState<TransactionItem[]>([]);
@@ -40,8 +41,8 @@ export default function Transactions() {
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">ID</th>
                             <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Room</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Game Type</th>
                             <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Game</th>
                             <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Setting</th>
                             <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Hours</th>
@@ -54,22 +55,34 @@ export default function Transactions() {
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                             <tr>
-                                <td colSpan={9} className="px-4 py-6 text-center text-sm text-gray-500">Loading...</td>
+                                <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">Loading...</td>
                             </tr>
                         ) : items.length === 0 ? (
                             <tr>
-                                <td colSpan={9} className="px-4 py-6 text-center text-sm text-gray-500">No transactions found</td>
+                                <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">No transactions found</td>
                             </tr>
                         ) : (
                             items.map((t) => (
                                 <tr key={t.id}>
-                                    <td className="px-4 py-3 text-sm text-gray-700 break-all">{t.id}</td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{t.room}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{t.gameType}</td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{t.game}</td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{t.gameSetting}</td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{t.hours}</td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{t.totalPrice}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-700">{t.statusId}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                        {(() => {
+                                            const name = getStatusName(t.statusId) || t.statusId;
+                                            const isEnabled = t.statusId === STATUS_ENABLED;
+                                            return (
+                                                <span
+                                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isEnabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                                                >
+                                                    {name}
+                                                </span>
+                                            );
+                                        })()}
+                                    </td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{new Date(t.createdOn).toLocaleString()}</td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{t.createdBy}</td>
                                 </tr>
