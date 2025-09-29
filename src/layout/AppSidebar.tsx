@@ -120,7 +120,7 @@ const AppSidebar: React.FC = () => {
       return [
         // use non-admin paths so the GameCashie role isn't blocked by AdminRoute
         { icon: <PlugInIcon />, name: "Game Session", path: "/game/sessions" },
-        { icon: <PieChartIcon />, name: "Transactions", path: "/gamecashier/transactions" },
+
         { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
       ];
     }

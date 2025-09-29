@@ -31,6 +31,7 @@ import Rooms from "./pages/Admin/Rooms";
 import Orders from "./pages/Admin/Orders";
 import CashierItems from './pages/Cashier/Items';
 import CashierOrders from './pages/Cashier/Orders';
+import GameSession from "./pages/Cashier/GameSession";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -111,7 +112,8 @@ export default function App() {
               <Route path="/admin/transactions" element={<AdminRoute><Transactions /></AdminRoute>} />
               <Route path="/admin/rooms" element={<AdminRoute><Rooms /></AdminRoute>} />
               {/* GameCashie routes (non-admin paths) */}
-              <Route path="/gamecashier/transactions" element={<GameCashieRoute><Transactions /></GameCashieRoute>} />
+
+              <Route path="/game/sessions" element={<GameCashieRoute><GameSession /></GameCashieRoute>} />
               <Route path="/gamecashier/rooms" element={<GameCashieRoute><Rooms /></GameCashieRoute>} />
             </Route>
 
