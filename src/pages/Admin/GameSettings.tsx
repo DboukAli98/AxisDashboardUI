@@ -20,6 +20,8 @@ export default function GameSettings() {
     const [newName, setNewName] = useState('');
     const [newType, setNewType] = useState('');
     const [newGameId, setNewGameId] = useState('');
+    const [newHours, setNewHours] = useState<number | ''>('');
+    const [newPrice, setNewPrice] = useState<number | ''>('');
     const [creating, setCreating] = useState(false);
 
     // edit/delete state
@@ -57,13 +59,21 @@ export default function GameSettings() {
         setNewName('');
         setNewType('');
         setNewGameId(games[0]?.id || '');
+        setNewHours('');
+        setNewPrice('');
         setIsOpen(true);
     };
 
     const handleCreateOrUpdate = async () => {
         setCreating(true);
         try {
-            const body: CreateSettingRequest = { name: newName, type: newType, gameId: newGameId };
+            const body: CreateSettingRequest = {
+                name: newName,
+                type: newType,
+                gameId: newGameId,
+                hours: newHours === '' ? undefined : newHours,
+                price: newPrice === '' ? undefined : newPrice,
+            };
             if (editingId) {
                 await updateSetting(editingId, body);
             } else {
@@ -117,7 +127,10 @@ export default function GameSettings() {
                                     <th className="text-left px-4 py-2">Name</th>
                                     <th className="text-left px-4 py-2">Type</th>
                                     <th className="text-left px-4 py-2">Game</th>
-                                    <th className="text-left px-4 py-2">Attributes</th>
+                                    <th className="text-left px-4 py-2">Hours</th>
+                                    <th className="text-left px-4 py-2">Price</th>
+                                    <th className="text-left px-4 py-2">Created</th>
+                                    <th className="text-left px-4 py-2">Modified</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -126,16 +139,10 @@ export default function GameSettings() {
                                         <td className="px-4 py-2 align-top">{s.name}</td>
                                         <td className="px-4 py-2 align-top">{s.type}</td>
                                         <td className="px-4 py-2 align-top">{s.gameName ?? (games.find(g => g.id === s.gameId)?.name ?? s.gameId)}</td>
-                                        <td className="px-4 py-2">
-                                            <ul className="space-y-2">
-                                                {Array.isArray(s.attributes) && s.attributes.length > 0 ? s.attributes.map((a) => (
-                                                    <li key={a.id} className="flex gap-4 items-start">
-                                                        <div className="text-sm font-medium">{a.name}</div>
-                                                        <div className="text-sm text-gray-600">{a.attributeValue}</div>
-                                                    </li>
-                                                )) : <div className="text-sm text-gray-500">No attributes</div>}
-                                            </ul>
-                                        </td>
+                                        <td className="px-4 py-2 align-top">{typeof s.hours === 'number' ? s.hours : '-'}</td>
+                                        <td className="px-4 py-2 align-top">{typeof s.price === 'number' ? s.price : '-'}</td>
+                                        <td className="px-4 py-2 align-top">{s.createdOn ? new Date(s.createdOn).toLocaleString() : '-'}</td>
+                                        <td className="px-4 py-2 align-top">{s.modifiedOn ? new Date(s.modifiedOn).toLocaleString() : '-'}</td>
                                         <td className="px-4 py-2 text-right">
                                             <div className="flex justify-end items-center gap-2">
                                                 <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => {
@@ -144,6 +151,8 @@ export default function GameSettings() {
                                                     setNewName(s.name);
                                                     setNewType(s.type);
                                                     setNewGameId(s.gameId);
+                                                    setNewHours(typeof s.hours === 'number' ? s.hours : '');
+                                                    setNewPrice(typeof s.price === 'number' ? s.price : '');
                                                     setIsOpen(true);
                                                 }}>Edit</button>
                                                 <DeleteIconButton onClick={() => setDeleteId(s.id)} />
@@ -180,6 +189,14 @@ export default function GameSettings() {
                     <div>
                         <Label>Type</Label>
                         <Input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="Type" />
+                    </div>
+                    <div>
+                        <Label>Hours</Label>
+                        <Input type="number" value={newHours === '' ? '' : String(newHours)} onChange={(e) => setNewHours(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Hours" />
+                    </div>
+                    <div>
+                        <Label>Price</Label>
+                        <Input type="number" value={newPrice === '' ? '' : String(newPrice)} onChange={(e) => setNewPrice(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Price" />
                     </div>
                     <div>
                         <Label>Game</Label>

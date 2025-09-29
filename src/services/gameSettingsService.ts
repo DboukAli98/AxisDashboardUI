@@ -13,6 +13,10 @@ export type GameSettingDto = {
   type: string;
   gameId: string;
   gameName?: string;
+  hours?: number;
+  price?: number;
+  createdOn?: string | null;
+  modifiedOn?: string | null;
   attributes: SettingAttribute[];
   values: unknown[];
 };
@@ -32,6 +36,8 @@ export type CreateSettingRequest = {
   name: string;
   type: string;
   gameId: string;
+  hours?: number;
+  price?: number;
 };
 
 export async function createSetting(body: CreateSettingRequest) {
