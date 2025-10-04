@@ -14,7 +14,7 @@ export default function Transactions() {
         async function load() {
             setLoading(true);
             try {
-                const res = await getTransactions(page, pageSize);
+                const res = await getTransactions({ page, pageSize });
                 if (!cancelled) {
                     setItems(res.items || []);
                     setTotal(res.totalCount || 0);
@@ -55,11 +55,11 @@ export default function Transactions() {
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                             <tr>
-                                <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">Loading...</td>
+                                <td colSpan={9} className="px-4 py-6 text-center text-sm text-gray-500">Loading...</td>
                             </tr>
                         ) : items.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">No transactions found</td>
+                                <td colSpan={9} className="px-4 py-6 text-center text-sm text-gray-500">No transactions found</td>
                             </tr>
                         ) : (
                             items.map((t) => (

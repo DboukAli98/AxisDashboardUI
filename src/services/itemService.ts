@@ -18,8 +18,11 @@ export type ItemListResponse = {
   items: ItemDto[];
 };
 
-export async function getItems(page = 1, pageSize = 10): Promise<ItemListResponse> {
-  const res = await api.get<ItemListResponse>(`${basePath}?Page=${page}&PageSize=${pageSize}`);
+export async function getItems(page = 1, pageSize = 10, categoryId?: string | null, search?: string | null): Promise<ItemListResponse> {
+  let url = `${basePath}?Page=${page}&PageSize=${pageSize}`;
+  if (categoryId) url += `&CategoryId=${encodeURIComponent(categoryId)}`;
+  if (search) url += `&Search=${encodeURIComponent(search)}`;
+  const res = await api.get<ItemListResponse>(url);
   return res.data;
 }
 
