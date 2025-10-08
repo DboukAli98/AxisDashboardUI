@@ -31,7 +31,7 @@ export default function Game() {
     const [showForm, setShowForm] = useState(false);
     const [name, setName] = useState("");
     const [categoryId, setCategoryId] = useState<number | null>(null);
-    const [statusId, setStatusId] = useState<number | null>(null);
+    const [statusId, setStatusId] = useState<number | null>(STATUS_ENABLED);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [submitting, setSubmitting] = useState(false);
@@ -94,7 +94,15 @@ export default function Game() {
             <div className="mb-4 flex items-center gap-3">
                 <button
                     className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded"
-                    onClick={() => setShowForm(true)}
+                    onClick={() => {
+                        // open create modal with default values
+                        setEditingId(null);
+                        setName("");
+                        setCategoryId(null);
+                        setStatusId(STATUS_ENABLED);
+                        setError(null);
+                        setShowForm(true);
+                    }}
                 >
                     Add Game
                 </button>
@@ -130,14 +138,15 @@ export default function Game() {
                                             return;
                                         }
 
+                                        const payloadStatus = statusId === null ? null : Number(statusId);
                                         if (editingId) {
-                                            const updated = await updateGame(editingId, { name, categoryId, statusId });
+                                            const updated = await updateGame(editingId, { name, categoryId, statusId: payloadStatus });
                                             // re-fetch list to get server-side ordering and latest data
                                             const refreshed = await getGames();
                                             setGames(refreshed.items || []);
                                             setNotification({ variant: 'success', title: 'Updated', message: `Game '${updated.name}' updated` });
                                         } else {
-                                            const created = await createGame({ name, categoryId, statusId });
+                                            const created = await createGame({ name, categoryId, statusId: payloadStatus });
                                             setGames((g) => [created, ...g]);
                                             setNotification({ variant: 'success', title: 'Created', message: `Game '${created.name}' created` });
                                         }
@@ -217,7 +226,7 @@ export default function Game() {
                                                     // open edit
                                                     setEditingId(g.id);
                                                     setName(g.name);
-                                                    setCategoryId(g.categoryId ?? "");
+                                                    setCategoryId(g.categoryId ?? null);
                                                     setStatusId(g.statusId ?? null);
                                                     setShowForm(true);
                                                 }}>Edit</button>

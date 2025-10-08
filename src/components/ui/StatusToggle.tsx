@@ -7,6 +7,7 @@ type StatusToggleProps = {
 
 export default function StatusToggle({ value, onChange }: StatusToggleProps) {
     const isEnabled = value === STATUS_ENABLED;
+    const isDisabled = value === STATUS_DISABLED;
     return (
         <div className="flex items-center gap-2">
             <button
@@ -18,7 +19,7 @@ export default function StatusToggle({ value, onChange }: StatusToggleProps) {
             </button>
             <button
                 type="button"
-                className={`px-3 py-1 rounded ${!isEnabled ? 'bg-red-600 text-white' : 'bg-gray-200'}`}
+                className={`px-3 py-1 rounded ${isDisabled ? 'bg-red-600 text-white' : 'bg-gray-200'}`}
                 onClick={() => onChange(STATUS_DISABLED)}
             >
                 Disabled

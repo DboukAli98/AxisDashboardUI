@@ -11,7 +11,7 @@ import Modal from "../../components/ui/Modal";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import DeleteIconButton from "../../components/ui/DeleteIconButton";
-import { getCategories, CategoryDto } from "../../services/categoryService";
+import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import { getStatusName, STATUS_ENABLED, STATUS_DISABLED } from '../../services/statuses';
 import StatusToggle from '../../components/ui/StatusToggle';
 import {
@@ -40,7 +40,7 @@ export default function Items() {
         type: "",
         categoryId: null,
         gameId: null,
-        statusId: null,
+        statusId: STATUS_ENABLED,
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -84,7 +84,7 @@ export default function Items() {
 
     useEffect(() => {
         let mounted = true;
-        getCategories(1, 100)
+        getCategoriesByType('item', 1, 100)
             .then((res) => {
                 if (!mounted) return;
                 setCategories(res.items || []);
@@ -97,7 +97,7 @@ export default function Items() {
 
     function openCreate() {
         setEditing(null);
-        setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, gameId: null });
+        setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, gameId: null, statusId: STATUS_ENABLED });
         setIsFormOpen(true);
     }
 
@@ -234,7 +234,6 @@ export default function Items() {
                     </select>
                     <label className="text-sm text-gray-600">Status</label>
                     <StatusToggle value={form.statusId} onChange={(id) => setForm((f) => ({ ...f, statusId: id }))} />
-                    <input className="px-2 py-1 border rounded" placeholder="GameId" value={form.gameId ?? ""} onChange={(e) => setForm((f) => ({ ...f, gameId: e.target.value || null }))} />
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
                             {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}

@@ -14,6 +14,7 @@ import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import StatusToggle from '../../components/ui/StatusToggle';
+import { STATUS_ENABLED } from '../../services/statuses';
 
 export default function CashierItems() {
     const [items, setItems] = useState<ItemDto[]>([]);
@@ -37,7 +38,7 @@ export default function CashierItems() {
         type: "",
         categoryId: null,
         gameId: null,
-        statusId: null,
+        statusId: STATUS_ENABLED,
     });
     const [submitting, setSubmitting] = useState(false);
 
