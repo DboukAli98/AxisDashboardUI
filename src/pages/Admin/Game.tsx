@@ -30,8 +30,8 @@ export default function Game() {
     const [totalCount, setTotalCount] = useState<number | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [name, setName] = useState("");
-    const [categoryId, setCategoryId] = useState("");
-    const [statusId, setStatusId] = useState<string | null>(null);
+    const [categoryId, setCategoryId] = useState<number | null>(null);
+    const [statusId, setStatusId] = useState<number | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [submitting, setSubmitting] = useState(false);
@@ -109,8 +109,8 @@ export default function Game() {
                             <Select
                                 options={categories.map((c) => ({ value: c.id, label: c.name }))}
                                 placeholder="Select a category"
-                                defaultValue={categoryId}
-                                onChange={(v) => setCategoryId(v)}
+                                defaultValue={categoryId ?? ""}
+                                onChange={(v) => setCategoryId(v === '' ? null : (typeof v === 'number' ? v : Number(v)))}
                             />
                         </div>
                         <div>
@@ -124,6 +124,12 @@ export default function Game() {
                                 onClick={async () => {
                                     setSubmitting(true);
                                     try {
+                                        if (!categoryId) {
+                                            setError('Category is required');
+                                            setSubmitting(false);
+                                            return;
+                                        }
+
                                         if (editingId) {
                                             const updated = await updateGame(editingId, { name, categoryId, statusId });
                                             // re-fetch list to get server-side ordering and latest data
@@ -136,7 +142,7 @@ export default function Game() {
                                             setNotification({ variant: 'success', title: 'Created', message: `Game '${created.name}' created` });
                                         }
                                         setName("");
-                                        setCategoryId("");
+                                        setCategoryId(null);
                                         setStatusId(null);
                                         setEditingId(null);
                                         setShowForm(false);

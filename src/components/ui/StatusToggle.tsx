@@ -1,8 +1,8 @@
 import { STATUS_ENABLED, STATUS_DISABLED } from '../../services/statuses';
 
 type StatusToggleProps = {
-    value?: string | null;
-    onChange: (id: string | null) => void;
+    value?: number | null;
+    onChange: (id: number | null) => void;
 };
 
 export default function StatusToggle({ value, onChange }: StatusToggleProps) {

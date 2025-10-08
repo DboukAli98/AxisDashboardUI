@@ -6,9 +6,9 @@ export type ItemDto = {
   quantity: number;
   price: number;
   type: string;
-  categoryId: string | null;
+  categoryId: number | null;
   gameId: string | null;
-  statusId?: string | null;
+  statusId?: number | null;
 };
 
 const basePath = "/item";
@@ -18,9 +18,9 @@ export type ItemListResponse = {
   items: ItemDto[];
 };
 
-export async function getItems(page = 1, pageSize = 10, categoryId?: string | null, search?: string | null): Promise<ItemListResponse> {
+export async function getItems(page = 1, pageSize = 10, categoryId?: number | null, search?: string | null): Promise<ItemListResponse> {
   let url = `${basePath}?Page=${page}&PageSize=${pageSize}`;
-  if (categoryId) url += `&CategoryId=${encodeURIComponent(categoryId)}`;
+  if (categoryId !== undefined && categoryId !== null) url += `&CategoryId=${encodeURIComponent(String(categoryId))}`;
   if (search) url += `&Search=${encodeURIComponent(search)}`;
   const res = await api.get<ItemListResponse>(url);
   return res.data;

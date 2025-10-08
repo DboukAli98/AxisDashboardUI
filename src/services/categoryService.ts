@@ -1,7 +1,7 @@
 import api from './api';
 
 export type CategoryDto = {
-  id: string;
+  id: number;
   name: string;
   type?: string;
 };
@@ -26,6 +26,24 @@ export async function getCategories(page = 1, pageSize = 10): Promise<CategoryLi
 export async function getCategoriesByType(type = 'game', page = 1, pageSize = 10): Promise<PagedCategoryResponse> {
   const res = await api.get<PagedCategoryResponse>(`/category/type/${encodeURIComponent(type)}?Page=${page}&PageSize=${pageSize}`);
   return res.data;
+}
+
+export async function getCategoryById(id: number): Promise<CategoryDto> {
+  const res = await api.get<CategoryDto>(`/category/${id}`);
+  return res.data;
+}
+
+export async function createCategory(payload: { name: string; type: string; }): Promise<CategoryDto> {
+  const res = await api.post<CategoryDto>(`/category`, payload);
+  return res.data;
+}
+
+export async function updateCategory(id: number, payload: { name: string; type: string; }): Promise<void> {
+  await api.put(`/category/${id}`, payload);
+}
+
+export async function deleteCategory(id: number): Promise<void> {
+  await api.delete(`/category/${id}`);
 }
 
 export default {

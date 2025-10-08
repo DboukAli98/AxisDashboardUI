@@ -3,9 +3,9 @@ import api from './api';
 export type GameDto = {
   id: string;
   name: string;
-  categoryId: string;
+  categoryId: number;
   categoryName?: string;
-  statusId?: string | null;
+  statusId?: number | null;
   createdOn: string;
   modifiedOn: string | null;
 };
@@ -24,7 +24,7 @@ export async function getGames(page = 1, pageSize = 10): Promise<GameListRespons
   return res.data;
 }
 
-export async function createGame(body: { name: string; categoryId: string; statusId?: string | null }): Promise<GameDto> {
+export async function createGame(body: { name: string; categoryId: number; statusId?: number | null }): Promise<GameDto> {
   const res = await api.post<GameDto>(basePath, body);
   return res.data;
 }
@@ -33,7 +33,7 @@ export async function deleteGame(id: string): Promise<void> {
   await api.delete(`${basePath}/${id}`);
 }
 
-export async function updateGame(id: string, body: { name: string; categoryId: string; statusId?: string | null }): Promise<GameDto> {
+export async function updateGame(id: string, body: { name: string; categoryId: number; statusId?: number | null }): Promise<GameDto> {
   const res = await api.put<GameDto>(`${basePath}/${id}`, body);
   return res.data;
 }

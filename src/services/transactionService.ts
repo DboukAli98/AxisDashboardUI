@@ -12,7 +12,7 @@ export type TransactionItem = {
   gameSetting: string;
   hours: number;
   totalPrice: number;
-  statusId: string;
+  statusId: number;
   createdOn: string;
   modifiedOn?: string | null;
   createdBy?: string | null;
@@ -28,7 +28,7 @@ export type PagedResponse<T> = {
 export type TransactionQuery = {
   page?: number;
   pageSize?: number;
-  categoryId?: string | null;
+  categoryId?: number | null;
   search?: string | null;
   createdBy?: string | null;
 };
@@ -36,7 +36,7 @@ export type TransactionQuery = {
 export async function getTransactions(query: TransactionQuery = {}) {
   const { page = 1, pageSize = 10, categoryId, search, createdBy } = query;
   const params: Record<string, unknown> = { Page: page, PageSize: pageSize };
-  if (categoryId) params.CategoryId = categoryId;
+  if (categoryId !== undefined && categoryId !== null) params.CategoryId = String(categoryId);
   if (search) params.Search = search;
   if (createdBy) params.CreatedBy = createdBy;
 

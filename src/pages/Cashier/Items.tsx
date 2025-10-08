@@ -23,7 +23,8 @@ export default function CashierItems() {
     const [page, setPage] = useState(1);
     const [pageSize] = useState(10);
     const [total, setTotal] = useState(0);
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [itemsReloadToken, setItemsReloadToken] = useState(0);
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -88,7 +89,7 @@ export default function CashierItems() {
         return () => {
             mounted = false;
         };
-    }, [page, pageSize, selectedCategory, debouncedSearch]);
+    }, [page, pageSize, selectedCategory, debouncedSearch, itemsReloadToken]);
 
     // fetch orders created by current user
     useEffect(() => {
@@ -186,7 +187,7 @@ export default function CashierItems() {
                 <div className="flex items-center gap-3">
                     <div>
                         <label className="text-sm text-gray-600 mr-2">Category</label>
-                        <select value={selectedCategory ?? ""} onChange={(e) => { setPage(1); setSelectedCategory(e.target.value || null); }} className="px-2 py-1 border rounded">
+                        <select value={selectedCategory ?? ""} onChange={(e) => { setPage(1); setSelectedCategory(e.target.value === '' ? null : Number(e.target.value)); }} className="px-2 py-1 border rounded">
                             <option value="">All</option>
                             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
@@ -306,6 +307,8 @@ export default function CashierItems() {
                                                         await createCoffeeShopOrder(orderItems as OrderItemRequest[]);
                                                         setSelectedItems({});
                                                         setIsDrawerOpen(false);
+                                                        // refresh items list to reflect updated stock
+                                                        setItemsReloadToken(t => t + 1);
                                                         setNotification({ variant: 'success', title: 'Order Created', message: 'Order submitted successfully' });
                                                     } catch (err) {
                                                         let message = 'Failed to create order';
@@ -366,7 +369,7 @@ export default function CashierItems() {
                     <input type="number" step="0.01" className="px-2 py-1 border rounded" placeholder="Price" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
                     <input className="px-2 py-1 border rounded" placeholder="Type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
                     <label className="text-sm text-gray-600">Category</label>
-                    <select className="px-2 py-1 border rounded" value={form.categoryId ?? ""} onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value || null }))}>
+                    <select className="px-2 py-1 border rounded" value={form.categoryId ?? ""} onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value === '' ? null : Number(e.target.value) }))}>
                         <option value="">-- Select category --</option>
                         {categories.map((c) => (
                             <option key={c.id} value={c.id}>{c.name}</option>

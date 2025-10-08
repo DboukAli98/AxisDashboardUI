@@ -200,7 +200,7 @@ export default function GameSettings() {
                     </div>
                     <div>
                         <Label>Game</Label>
-                        <Select options={games.map(g => ({ value: g.id, label: g.name }))} defaultValue={newGameId} onChange={(v) => setNewGameId(v)} />
+                        <Select options={games.map(g => ({ value: g.id, label: g.name }))} defaultValue={newGameId} onChange={(v) => setNewGameId(typeof v === 'number' ? String(v) : v)} />
                     </div>
                     <div className="flex justify-end gap-2">
                         <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setIsOpen(false)}>Cancel</button>

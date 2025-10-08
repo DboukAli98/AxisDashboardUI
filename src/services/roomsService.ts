@@ -3,7 +3,7 @@ import api from './api';
 export type RoomDto = {
   id: string;
   name: string;
-  categoryId: string;
+  categoryId: number;
   categoryName?: string;
   sets: number;
   createdOn?: string | null;
@@ -29,7 +29,7 @@ export async function getRoomById(id: string): Promise<RoomDto> {
 
 export type CreateRoomRequest = {
   name: string;
-  categoryId: string;
+  categoryId: number;
   sets: number;
 };
 

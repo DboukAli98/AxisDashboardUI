@@ -18,7 +18,7 @@ export default function Rooms() {
     const [isOpen, setIsOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [name, setName] = useState('');
-    const [categoryId, setCategoryId] = useState('');
+    const [categoryId, setCategoryId] = useState<number | null>(null);
     const [sets, setSets] = useState<number | ''>('');
     const [submitting, setSubmitting] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export default function Rooms() {
     const openCreate = () => {
         setEditingId(null);
         setName('');
-        setCategoryId(categories[0]?.id || '');
+        setCategoryId(categories[0]?.id ?? null);
         setSets('');
         setIsOpen(true);
     };
@@ -55,6 +55,11 @@ export default function Rooms() {
     const handleSave = async () => {
         setSubmitting(true);
         try {
+            if (!categoryId) {
+                // require category
+                setSubmitting(false);
+                return;
+            }
             const body: CreateRoomRequest = { name, categoryId, sets: sets === '' ? 0 : sets };
             if (editingId) {
                 await updateRoom(editingId, body);
@@ -158,7 +163,7 @@ export default function Rooms() {
                     </div>
                     <div>
                         <Label>Category</Label>
-                        <Select options={categories.map(c => ({ value: c.id, label: c.name }))} defaultValue={categoryId} onChange={(v) => setCategoryId(v)} />
+                        <Select options={categories.map(c => ({ value: c.id, label: c.name }))} defaultValue={categoryId ?? ""} onChange={(v) => setCategoryId(v === '' ? null : (typeof v === 'number' ? v : Number(v)))} />
                     </div>
                     <div>
                         <Label>Sets</Label>
