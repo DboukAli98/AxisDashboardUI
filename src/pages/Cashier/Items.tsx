@@ -135,13 +135,13 @@ export default function CashierItems() {
     // total selected items count (used to show View Order button)
     const totalSelected = Object.values(selectedItems).reduce((s, v) => s + (v || 0), 0);
 
-    // build order lines from selectedItems and items list
+    // build order lines from selectedItems and items list (coerce to numbers)
     const orderLines = Object.entries(selectedItems)
-        .filter(([, q]) => (q || 0) > 0)
+        .filter(([, q]) => Number(q) > 0)
         .map(([itemId, q]) => {
-            const item = items.find((it) => it.id === itemId);
-            const qty = q || 0;
-            const unit = item ? item.price : 0;
+            const item = items.find((it) => String(it.id) === String(itemId));
+            const qty = Number(q) || 0;
+            const unit = item && item.price != null ? Number(item.price) : 0;
             const name = item ? item.name : itemId;
             const lineTotal = unit * qty;
             return { itemId, name, qty, unit, lineTotal };
