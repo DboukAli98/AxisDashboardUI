@@ -106,27 +106,12 @@ export default function Game() {
                 >
                     Add Game
                 </button>
-                <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={editingId ? "Edit Game" : "Create Game"}>
-                    <div className="flex flex-col gap-3">
-                        <div>
-                            <Label htmlFor="game-name">Name</Label>
-                            <Input id="game-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-                        </div>
-                        <div>
-                            <Label>Category</Label>
-                            <Select
-                                options={categories.map((c) => ({ value: c.id, label: c.name }))}
-                                placeholder="Select a category"
-                                defaultValue={categoryId ?? ""}
-                                onChange={(v) => setCategoryId(v === '' ? null : (typeof v === 'number' ? v : Number(v)))}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-sm text-gray-600">Status</label>
-                            <StatusToggle value={statusId} onChange={(id) => setStatusId(id)} />
-                        </div>
-
-                        <div className="flex items-center gap-2">
+                <Modal
+                    isOpen={showForm}
+                    onClose={() => setShowForm(false)}
+                    title={editingId ? "Edit Game" : "Create Game"}
+                    footer={(
+                        <>
                             <button
                                 className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2"
                                 onClick={async () => {
@@ -141,7 +126,6 @@ export default function Game() {
                                         const payloadStatus = statusId === null ? null : Number(statusId);
                                         if (editingId) {
                                             const updated = await updateGame(editingId, { name, categoryId, statusId: payloadStatus });
-                                            // re-fetch list to get server-side ordering and latest data
                                             const refreshed = await getGames();
                                             setGames(refreshed.items || []);
                                             setNotification({ variant: 'success', title: 'Updated', message: `Game '${updated.name}' updated` });
@@ -174,7 +158,29 @@ export default function Game() {
                                 {submitting ? <Loader size={16} /> : (editingId ? 'Save' : 'Create')}
                             </button>
                             <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setShowForm(false)}>Cancel</button>
+                        </>
+                    )}
+                >
+                    <div className="flex flex-col gap-3">
+                        <div>
+                            <Label htmlFor="game-name">Name</Label>
+                            <Input id="game-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
                         </div>
+                        <div>
+                            <Label>Category</Label>
+                            <Select
+                                options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                                placeholder="Select a category"
+                                defaultValue={categoryId ?? ""}
+                                onChange={(v) => setCategoryId(v === '' ? null : (typeof v === 'number' ? v : Number(v)))}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-sm text-gray-600">Status</label>
+                            <StatusToggle value={statusId} onChange={(id) => setStatusId(id)} />
+                        </div>
+
+                        {/* actions moved to Modal footer */}
                     </div>
                 </Modal>
             </div>
@@ -252,10 +258,12 @@ export default function Game() {
                 </div>
             </div>
 
-            <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm delete">
-                <div className="space-y-4">
-                    <p>Are you sure you want to delete this game?</p>
-                    <div className="flex items-center gap-2">
+            <Modal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                title="Confirm delete"
+                footer={(
+                    <>
                         <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center gap-2" onClick={async () => {
                             if (!deleteId) return;
                             setDeleting(true);
@@ -280,7 +288,11 @@ export default function Game() {
                             {deleting ? <Loader size={16} /> : 'Delete'}
                         </button>
                         <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
-                    </div>
+                    </>
+                )}
+            >
+                <div className="space-y-4">
+                    <p>Are you sure you want to delete this game?</p>
                 </div>
             </Modal>
             {/* Toast container bottom-right */}

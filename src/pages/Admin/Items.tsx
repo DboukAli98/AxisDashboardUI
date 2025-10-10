@@ -365,10 +365,12 @@ export default function Items() {
                 </div>
             </Modal>
 
-            <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm delete">
-                <div className="space-y-4">
-                    <p>Are you sure you want to delete this item?</p>
-                    <div className="flex items-center gap-2">
+            <Modal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                title="Confirm delete"
+                footer={(
+                    <>
                         <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center gap-2" onClick={async () => {
                             if (!deleteId) return;
                             setDeleting(true);
@@ -393,7 +395,11 @@ export default function Items() {
                             {deleting ? <Loader size={16} /> : 'Delete'}
                         </button>
                         <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
-                    </div>
+                    </>
+                )}
+            >
+                <div className="space-y-4">
+                    <p>Are you sure you want to delete this item?</p>
                 </div>
             </Modal>
 

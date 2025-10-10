@@ -180,24 +180,32 @@ export default function CategoryManagement() {
                 </div>
             </div>
 
-            <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Category" : "Create Category"}>
-                <div className="flex flex-col gap-3">
-                    <Input placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-                    <label className="text-sm text-gray-600">Type</label>
-                    <Select options={[{ value: 'item', label: 'item' }, { value: 'game', label: 'game' }]} defaultValue={form.type} onChange={(v: string | number) => setForm((f) => ({ ...f, type: String(v) }))} />
-                    <div className="flex items-center gap-2">
+            <Modal
+                isOpen={isFormOpen}
+                onClose={() => setIsFormOpen(false)}
+                title={editing ? "Edit Category" : "Create Category"}
+                footer={(
+                    <>
                         <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
                             {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}
                         </button>
                         <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setIsFormOpen(false)}>Cancel</button>
-                    </div>
+                    </>
+                )}
+            >
+                <div className="flex flex-col gap-3">
+                    <Input placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                    <label className="text-sm text-gray-600">Type</label>
+                    <Select options={[{ value: 'item', label: 'item' }, { value: 'game', label: 'game' }]} defaultValue={form.type} onChange={(v: string | number) => setForm((f) => ({ ...f, type: String(v) }))} />
                 </div>
             </Modal>
 
-            <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm delete">
-                <div className="space-y-4">
-                    <p>Are you sure you want to delete this category?</p>
-                    <div className="flex items-center gap-2">
+            <Modal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                title="Confirm delete"
+                footer={(
+                    <>
                         <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center gap-2" onClick={async () => {
                             if (deleteId === null) return;
                             setDeleting(true);
@@ -222,7 +230,11 @@ export default function CategoryManagement() {
                             {deleting ? <Loader size={16} /> : 'Delete'}
                         </button>
                         <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
-                    </div>
+                    </>
+                )}
+            >
+                <div className="space-y-4">
+                    <p>Are you sure you want to delete this category?</p>
                 </div>
             </Modal>
 

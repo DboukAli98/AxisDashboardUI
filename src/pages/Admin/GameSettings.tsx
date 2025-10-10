@@ -176,7 +176,17 @@ export default function GameSettings() {
                 </div>
             )}
 
-            <Modal isOpen={isOpen} onClose={() => { setIsOpen(false); setEditingId(null); }} title={editingId ? "Edit Setting" : "Create Setting"}>
+            <Modal
+                isOpen={isOpen}
+                onClose={() => { setIsOpen(false); setEditingId(null); }}
+                title={editingId ? "Edit Setting" : "Create Setting"}
+                footer={(
+                    <>
+                        <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setIsOpen(false)}>Cancel</button>
+                        <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleCreateOrUpdate} disabled={creating}>{creating ? 'Saving...' : (editingId ? 'Save' : 'Create')}</button>
+                    </>
+                )}
+            >
                 <div className="space-y-4">
                     <div>
                         <Label>Name</Label>
@@ -198,22 +208,25 @@ export default function GameSettings() {
                         <Label>Game</Label>
                         <Select options={games.map(g => ({ value: g.id, label: g.name }))} defaultValue={newGameId} onChange={(v) => setNewGameId(typeof v === 'number' ? String(v) : v)} />
                     </div>
-                    <div className="flex justify-end gap-2">
-                        <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setIsOpen(false)}>Cancel</button>
-                        <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleCreateOrUpdate} disabled={creating}>{creating ? 'Saving...' : (editingId ? 'Save' : 'Create')}</button>
-                    </div>
+                    {/* actions are rendered in the Modal footer */}
                 </div>
             </Modal>
 
-            <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm delete">
-                <div className="space-y-4">
-                    <p>Are you sure you want to delete this setting?</p>
-                    <div className="flex items-center gap-2">
+            <Modal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                title="Confirm delete"
+                footer={(
+                    <>
                         <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center gap-2" onClick={handleDelete}>
                             {deleting ? 'Deleting...' : 'Delete'}
                         </button>
                         <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
-                    </div>
+                    </>
+                )}
+            >
+                <div className="space-y-4">
+                    <p>Are you sure you want to delete this setting?</p>
                 </div>
             </Modal>
         </div>

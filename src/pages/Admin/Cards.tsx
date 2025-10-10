@@ -160,24 +160,32 @@ export default function Cards() {
                 </div>
             )}
 
-            <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Card" : "Create Card"}>
-                <div className="flex flex-col gap-3">
-                    <Input placeholder="Name" value={form.cardName} onChange={(e) => setForm((f) => ({ ...f, cardName: e.target.value }))} />
-                    <Input placeholder="Type" value={form.cardType} onChange={(e) => setForm((f) => ({ ...f, cardType: e.target.value }))} />
-                    <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} /> Active</label>
-                    <div className="flex items-center gap-2">
+            <Modal
+                isOpen={isFormOpen}
+                onClose={() => setIsFormOpen(false)}
+                title={editing ? "Edit Card" : "Create Card"}
+                footer={(
+                    <>
                         <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
                             {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}
                         </button>
                         <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setIsFormOpen(false)}>Cancel</button>
-                    </div>
+                    </>
+                )}
+            >
+                <div className="flex flex-col gap-3">
+                    <Input placeholder="Name" value={form.cardName} onChange={(e) => setForm((f) => ({ ...f, cardName: e.target.value }))} />
+                    <Input placeholder="Type" value={form.cardType} onChange={(e) => setForm((f) => ({ ...f, cardType: e.target.value }))} />
+                    <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} /> Active</label>
                 </div>
             </Modal>
 
-            <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm delete">
-                <div className="space-y-4">
-                    <p>Are you sure you want to delete this card?</p>
-                    <div className="flex items-center gap-2">
+            <Modal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                title="Confirm delete"
+                footer={(
+                    <>
                         <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center gap-2" onClick={async () => {
                             if (!deleteId) return;
                             setDeleting(true);
@@ -202,7 +210,11 @@ export default function Cards() {
                             {deleting ? <Loader size={16} /> : 'Delete'}
                         </button>
                         <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
-                    </div>
+                    </>
+                )}
+            >
+                <div className="space-y-4">
+                    <p>Are you sure you want to delete this card?</p>
                 </div>
             </Modal>
 

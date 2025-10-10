@@ -153,7 +153,17 @@ export default function UsersManagement() {
                 </div>
             )}
 
-            <Modal isOpen={isOpen} onClose={closeModal} title={editingId ? 'Edit User' : 'Create User'}>
+            <Modal
+                isOpen={isOpen}
+                onClose={closeModal}
+                title={editingId ? 'Edit User' : 'Create User'}
+                footer={(
+                    <>
+                        <button className="bg-gray-200 text-gray-800 px-3 py-1 rounded" onClick={closeModal} disabled={saving}>Cancel</button>
+                        <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleRegister} disabled={saving}>{saving ? 'Saving...' : (editingId ? 'Save' : 'Create')}</button>
+                    </>
+                )}
+            >
                 <div className="space-y-4">
                     {message && <div className="text-sm text-red-600">{message}</div>}
                     <div>
@@ -178,10 +188,7 @@ export default function UsersManagement() {
                         />
                     </div>
 
-                    <div className="flex justify-end gap-2">
-                        <button className="bg-gray-200 text-gray-800 px-3 py-1 rounded" onClick={closeModal} disabled={saving}>Cancel</button>
-                        <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleRegister} disabled={saving}>{saving ? 'Saving...' : (editingId ? 'Save' : 'Create')}</button>
-                    </div>
+                    {/* actions moved to Modal footer */}
                 </div>
             </Modal>
         </div>
