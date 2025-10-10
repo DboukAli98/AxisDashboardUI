@@ -4,6 +4,7 @@ import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
 import DeleteIconButton from '../../components/ui/DeleteIconButton';
+import { PlayStationIcon, PcIcon } from '../../icons';
 import { getRooms, RoomDto, CreateRoomRequest, createRoom, updateRoom, deleteRoom } from '../../services/roomsService';
 import { getCategoriesByType, CategoryDto } from '../../services/categoryService';
 
@@ -51,6 +52,9 @@ export default function Rooms() {
         setSets('');
         setIsOpen(true);
     };
+
+
+    // seatsSelected removed — UI simplified to numeric sets input only
 
     const handleSave = async () => {
         setSubmitting(true);
@@ -104,42 +108,46 @@ export default function Rooms() {
             {loading && <div className="text-gray-600">Loading rooms...</div>}
 
             {!loading && (
-                <div className="bg-white rounded shadow overflow-hidden">
-                    <div className="p-4">
-                        <table className="min-w-full">
-                            <thead>
-                                <tr>
-                                    <th className="text-left px-4 py-2">Name</th>
-                                    <th className="text-left px-4 py-2">Category</th>
-                                    <th className="text-left px-4 py-2">Sets</th>
-                                    <th className="text-right px-4 py-2">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rooms.map(r => (
-                                    <tr key={r.id} className="border-t">
-                                        <td className="px-4 py-2 align-top">{r.name}</td>
-                                        <td className="px-4 py-2 align-top">{r.categoryName ?? r.categoryId}</td>
-                                        <td className="px-4 py-2 align-top">{r.sets}</td>
-                                        <td className="px-4 py-2 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => {
-                                                    setEditingId(r.id);
-                                                    setName(r.name);
-                                                    setCategoryId(r.categoryId);
-                                                    setSets(r.sets);
-                                                    setIsOpen(true);
-                                                }}>Edit</button>
-                                                <DeleteIconButton onClick={() => setDeleteId(r.id)} />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                <div>
+                    {/* Grid of room cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {rooms.map(r => {
+                            const catName = (r.categoryName || '').toString();
+                            const lower = catName.toLowerCase();
+                            const isPc = lower.includes('pc');
+                            const isPlay = lower.includes('play') || lower.includes('playstation');
+                            return (
+                                <div key={r.id} className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition flex flex-col justify-between">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <div className="text-lg font-medium">{r.name}</div>
+                                            <div className="text-sm text-gray-500">{r.categoryName ?? r.categoryId}</div>
+                                        </div>
+                                        <div className="ml-4">
+                                            {isPc && <PcIcon className="w-6 h-6 text-gray-600" />}
+                                            {(!isPc && isPlay) && <PlayStationIcon className="w-6 h-6 text-gray-600" />}
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <div className="text-sm text-gray-600">Sets: <span className="font-semibold">{r.sets}</span></div>
+                                        <div className="flex items-center gap-2">
+                                            <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => {
+                                                setEditingId(r.id);
+                                                setName(r.name);
+                                                setCategoryId(r.categoryId);
+                                                setSets(r.sets);
+                                                setIsOpen(true);
+                                            }}>Edit</button>
+                                            <DeleteIconButton onClick={() => setDeleteId(r.id)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
 
-                    <div className="p-4 flex items-center justify-between">
+                    {/* Pagination controls */}
+                    <div className="mt-4 p-2 flex items-center justify-between">
                         <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${rooms.length} of ${totalCount}` : ''}</div>
                         <div className="flex items-center gap-2">
                             <label className="text-sm text-gray-600">Page size</label>
@@ -167,7 +175,12 @@ export default function Rooms() {
                     </div>
                     <div>
                         <Label>Sets</Label>
-                        <Input type="number" value={sets === '' ? '' : String(sets)} onChange={(e) => setSets(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Sets" />
+                        <div className="flex items-center gap-3">
+                            <Input type="number" min="0" value={sets === '' ? '' : String(sets)} onChange={(e) => {
+                                const val = e.target.value === '' ? '' : Number(e.target.value);
+                                setSets(val);
+                            }} placeholder="Sets" />
+                        </div>
                     </div>
                     <div className="flex justify-end gap-2">
                         <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setIsOpen(false)}>Cancel</button>
