@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
     getItems,
+    getItem,
     createItem,
     updateItem,
     deleteItem,
@@ -44,6 +45,10 @@ export default function Items() {
     });
     const [submitting, setSubmitting] = useState(false);
 
+    // image upload states
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
 
@@ -58,6 +63,16 @@ export default function Items() {
         const t = setTimeout(() => setNotification(null), 4000);
         return () => clearTimeout(t);
     }, [notification]);
+
+    // cleanup object URL on unmount
+    useEffect(() => {
+        return () => {
+            if (imagePreview) {
+                try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; }
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         let mounted = true;
@@ -98,12 +113,24 @@ export default function Items() {
     function openCreate() {
         setEditing(null);
         setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, gameId: null, statusId: STATUS_ENABLED });
+        // clear any previous selected image
+        if (imagePreview) { try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; } }
+        setImageFile(null);
+        setImagePreview(null);
         setIsFormOpen(true);
     }
 
     function openEdit(item: ItemDto) {
         setEditing(item);
         setForm({ name: item.name, quantity: item.quantity, price: item.price, type: item.type, categoryId: item.categoryId, gameId: item.gameId, statusId: item.statusId ?? null });
+        // prefill image preview if available
+        if (item.imagePath) {
+            const resolved = resolveImageUrl(item.imagePath);
+            setImagePreview(resolved);
+        } else {
+            setImagePreview(null);
+        }
+        setImageFile(null);
         setIsFormOpen(true);
     }
 
@@ -111,16 +138,33 @@ export default function Items() {
         setSubmitting(true);
         try {
             if (editing) {
-                await updateItem(editing.id, form);
-                setItems((s) => s.map((it) => (it.id === editing.id ? { ...it, ...form } : it)));
+                // include image file if present
+                await updateItem(editing.id, { ...form, image: imageFile });
+                // refresh the updated item from server to get imagePath
+                try {
+                    const refreshed = await getItem(editing.id);
+                    setItems((s) => s.map((it) => (it.id === editing.id ? refreshed : it)));
+                } catch {
+                    // fallback: merge local form
+                    setItems((s) => s.map((it) => (it.id === editing.id ? { ...it, ...form } : it)));
+                }
                 setNotification({ variant: "success", title: "Updated", message: "Item updated" });
             } else {
-                const created = await createItem(form);
-                setItems((s) => [created, ...s]);
-                setNotification({ variant: "success", title: "Created", message: `Item '${created.name}' created` });
+                const created = await createItem({ ...form, image: imageFile });
+                // try to fetch full created item (server may populate imagePath)
+                let createdFull: ItemDto = created;
+                try {
+                    createdFull = await getItem(created.id);
+                } catch (e) { void e; }
+                setItems((s) => [createdFull, ...s]);
+                setNotification({ variant: "success", title: "Created", message: `Item '${createdFull.name}' created` });
             }
             setIsFormOpen(false);
             setEditing(null);
+            // cleanup preview after save
+            if (imagePreview) { try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; } }
+            setImageFile(null);
+            setImagePreview(null);
         } catch (err: unknown) {
             let message = "Failed to save";
             if (err && typeof err === "object") {
@@ -132,6 +176,37 @@ export default function Items() {
         } finally {
             setSubmitting(false);
         }
+    }
+
+    const transparentGif = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+
+    function resolveImageUrl(path?: string | null) {
+        if (!path) return '';
+        try {
+            // if already absolute url
+            const url = new URL(path);
+            return url.toString();
+        } catch {
+            // relative path: prefix with VITE_API_BASE_URL
+            const base = (import.meta.env.VITE_API_IMAGE_BASE_URL as string) || '';
+            if (base) {
+                return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+            }
+            return path;
+        }
+    }
+
+    function handleFileSelected(file?: File | null) {
+        if (!file) {
+            if (imagePreview) { try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; } }
+            setImageFile(null);
+            setImagePreview(null);
+            return;
+        }
+        if (imagePreview) { try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; } }
+        const url = URL.createObjectURL(file);
+        setImageFile(file);
+        setImagePreview(url);
     }
 
     return (
@@ -154,6 +229,7 @@ export default function Items() {
                         <Table>
                             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
                                 <TableRow>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Image</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Quantity</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Price</TableCell>
@@ -167,6 +243,18 @@ export default function Items() {
                             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                                 {items.map((it) => (
                                     <TableRow key={it.id}>
+                                        <TableCell className="px-4 py-3 text-start">
+                                            {it.imagePath ? (
+                                                <img
+                                                    src={resolveImageUrl(it.imagePath)}
+                                                    alt={it.name}
+                                                    className="w-12 h-8 object-cover rounded"
+                                                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = transparentGif; }}
+                                                />
+                                            ) : (
+                                                <div className="w-12 h-8 bg-gray-100 rounded" />
+                                            )}
+                                        </TableCell>
                                         <TableCell className="px-5 py-4 sm:px-6 text-start">
                                             <div className="font-medium text-gray-800 dark:text-white/90">{it.name}</div>
                                         </TableCell>
@@ -220,6 +308,37 @@ export default function Items() {
             <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Item" : "Create Item"}>
                 <div className="flex flex-col gap-3">
                     <input className="px-2 py-1 border rounded" placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                    {/* Image upload area */}
+                    <div
+                        className="border border-dashed border-gray-300 rounded p-3 flex flex-col items-center justify-center text-center text-sm text-gray-500"
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            const f = e.dataTransfer?.files?.[0];
+                            if (f) handleFileSelected(f);
+                        }}
+                    >
+                        {imagePreview ? (
+                            <div className="flex items-center gap-3">
+                                <img src={imagePreview} alt="preview" className="w-24 h-16 object-cover rounded" />
+                                <div className="flex flex-col">
+                                    <button type="button" className="px-2 py-1 bg-gray-200 rounded mb-2" onClick={() => handleFileSelected(null)}>Remove</button>
+                                    <label className="px-2 py-1 bg-gray-100 rounded cursor-pointer">
+                                        Replace
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelected(e.target.files?.[0] ?? null)} />
+                                    </label>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center gap-2">
+                                <div>Drag & drop an image here, or</div>
+                                <label className="px-3 py-1 bg-gray-200 rounded cursor-pointer">
+                                    Click to select
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelected(e.target.files?.[0] ?? null)} />
+                                </label>
+                            </div>
+                        )}
+                    </div>
                     <label className="text-sm text-gray-600">Quantity</label>
                     <input type="number" className="px-2 py-1 border rounded" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
                     <label className="text-sm text-gray-600">Price (usd)</label>
