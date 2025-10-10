@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { getGames, GameDto } from '../../services/gameService';
 import { getSettings, GameSettingDto } from '../../services/gameSettingsService';
-import { getStatusName, STATUS_DISABLED } from '../../services/statuses';
+import { getStatusName, STATUS_DISABLED, STATUS_ENABLED } from '../../services/statuses';
 import Loader from '../../components/ui/Loader';
 import Modal from '../../components/ui/Modal';
 import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import Alert from '../../components/ui/alert/Alert';
 import { createGameSession } from '../../services/gameSession';
-import { STATUS_ENABLED } from '../../services/statuses';
+// ...existing imports...
 
 const PAGE_SIZE = 8;
 
@@ -95,11 +95,13 @@ const GameSession: React.FC = () => {
                                     </div>
                                     <div className="text-sm">
                                         {(() => {
-                                            const name = getStatusName(g.statusId) ?? g.statusId ?? '-';
-                                            if (g.statusId === STATUS_ENABLED) {
+                                            // coerce to number for reliable comparisons (API may return strings)
+                                            const statusIdNum = g.statusId === null || g.statusId === undefined ? null : Number(g.statusId);
+                                            const name = getStatusName(statusIdNum) ?? (g.statusId ?? '-');
+                                            if (statusIdNum === STATUS_ENABLED) {
                                                 return <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">{name}</span>;
                                             }
-                                            if (g.statusId === STATUS_DISABLED) {
+                                            if (statusIdNum === STATUS_DISABLED) {
                                                 return <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">{name}</span>;
                                             }
                                             // default neutral badge
@@ -170,7 +172,7 @@ const GameSession: React.FC = () => {
                                     gameId: selectedSetting.gameId,
                                     gameSettingId: selectedSetting.id,
                                     hours: startHours,
-                                    status: STATUS_ENABLED,
+                                    status: String(STATUS_ENABLED),
                                 });
                                 setToast({ variant: 'success', title: 'Session started', message: `Session created` });
                                 setStartModalOpen(false);
