@@ -10,11 +10,13 @@ import {
 import { createCoffeeShopOrder, OrderItemRequest, getTransactions, TransactionItem } from '../../services/transactionService';
 import { useAuth } from '../../context/AuthContext';
 import Modal from "../../components/ui/Modal";
+import Input from "../../components/form/input/InputField";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import StatusToggle from '../../components/ui/StatusToggle';
 import { STATUS_ENABLED } from '../../services/statuses';
+import Select from "../../components/form/Select";
 
 export default function CashierItems() {
     const [items, setItems] = useState<ItemDto[]>([]);
@@ -188,14 +190,19 @@ export default function CashierItems() {
                 <div className="flex items-center gap-3">
                     <div>
                         <label className="text-sm text-gray-600 mr-2">Category</label>
-                        <select value={selectedCategory ?? ""} onChange={(e) => { setPage(1); setSelectedCategory(e.target.value === '' ? null : Number(e.target.value)); }} className="px-2 py-1 border rounded">
-                            <option value="">All</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                        <div className="w-48 inline-block">
+                            <Select
+                                options={[{ value: '', label: 'All' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
+                                defaultValue={selectedCategory ?? ''}
+                                onChange={(v: string | number) => { setPage(1); setSelectedCategory(v === '' ? null : Number(v)); }}
+                            />
+                        </div>
                     </div>
                     <div>
                         <label className="text-sm text-gray-600 mr-2">Search</label>
-                        <input className="px-2 py-1 border rounded" placeholder="Search items..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
+                        <div className="w-56">
+                            <Input placeholder="Search items..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} className="px-2 py-1" />
+                        </div>
                     </div>
                 </div>
 
@@ -363,22 +370,17 @@ export default function CashierItems() {
 
             <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Item" : "Create Item"}>
                 <div className="flex flex-col gap-3">
-                    <input className="px-2 py-1 border rounded" placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                    <Input placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                     <label className="text-sm text-gray-600">Quantity</label>
-                    <input type="number" className="px-2 py-1 border rounded" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
+                    <Input type="number" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
                     <label className="text-sm text-gray-600">Price (usd)</label>
-                    <input type="number" step="0.01" className="px-2 py-1 border rounded" placeholder="Price" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
-                    <input className="px-2 py-1 border rounded" placeholder="Type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
+                    <Input type="number" step={0.01} placeholder="Price" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
+                    <Input placeholder="Type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
                     <label className="text-sm text-gray-600">Category</label>
-                    <select className="px-2 py-1 border rounded" value={form.categoryId ?? ""} onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value === '' ? null : Number(e.target.value) }))}>
-                        <option value="">-- Select category --</option>
-                        {categories.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
+                    <Select options={[{ value: '', label: '-- Select category --' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} defaultValue={form.categoryId ?? ''} onChange={(v: string | number) => setForm((f) => ({ ...f, categoryId: v === '' ? null : Number(v) }))} />
                     <label className="text-sm text-gray-600">Status</label>
                     <StatusToggle value={form.statusId} onChange={(id) => setForm((f) => ({ ...f, statusId: id }))} />
-                    <input className="px-2 py-1 border rounded" placeholder="GameId" value={form.gameId ?? ""} onChange={(e) => setForm((f) => ({ ...f, gameId: e.target.value || null }))} />
+                    <Input placeholder="GameId" value={form.gameId ?? ""} onChange={(e) => setForm((f) => ({ ...f, gameId: e.target.value || null }))} />
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
                             {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}

@@ -3,8 +3,9 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core";
+import { EventInput, DateSelectArg, EventClickArg, EventContentArg } from "@fullcalendar/core";
 import Modal from "../components/ui/Modal";
+import Input from "../components/form/input/InputField";
 import { useModal } from "../hooks/useModal";
 import PageMeta from "../components/common/PageMeta";
 
@@ -166,7 +167,7 @@ const Calendar: React.FC = () => {
                   <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                     Event Title
                   </label>
-                  <input
+                  <Input
                     id="event-title"
                     type="text"
                     value={eventTitle}
@@ -219,7 +220,7 @@ const Calendar: React.FC = () => {
                   Enter Start Date
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="event-start-date"
                     type="date"
                     value={eventStartDate}
@@ -234,7 +235,7 @@ const Calendar: React.FC = () => {
                   Enter End Date
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="event-end-date"
                     type="date"
                     value={eventEndDate}
@@ -267,8 +268,8 @@ const Calendar: React.FC = () => {
   );
 };
 
-const renderEventContent = (eventInfo: any) => {
-  const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
+const renderEventContent = (eventInfo: EventContentArg) => {
+  const colorClass = `fc-bg-${String(eventInfo.event.extendedProps.calendar).toLowerCase()}`;
   return (
     <div
       className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm`}

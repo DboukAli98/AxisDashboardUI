@@ -7,6 +7,7 @@ import {
     CardDto,
 } from "../../services/cardService";
 import Modal from "../../components/ui/Modal";
+import Input from "../../components/form/input/InputField";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import DeleteIconButton from "../../components/ui/DeleteIconButton";
@@ -161,8 +162,8 @@ export default function Cards() {
 
             <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Card" : "Create Card"}>
                 <div className="flex flex-col gap-3">
-                    <input className="px-2 py-1 border rounded" placeholder="Name" value={form.cardName} onChange={(e) => setForm((f) => ({ ...f, cardName: e.target.value }))} />
-                    <input className="px-2 py-1 border rounded" placeholder="Type" value={form.cardType} onChange={(e) => setForm((f) => ({ ...f, cardType: e.target.value }))} />
+                    <Input placeholder="Name" value={form.cardName} onChange={(e) => setForm((f) => ({ ...f, cardName: e.target.value }))} />
+                    <Input placeholder="Type" value={form.cardType} onChange={(e) => setForm((f) => ({ ...f, cardType: e.target.value }))} />
                     <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} /> Active</label>
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>

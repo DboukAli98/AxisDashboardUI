@@ -9,6 +9,8 @@ import {
     CategoryListResponse,
 } from "../../services/categoryService";
 import Modal from "../../components/ui/Modal";
+import Select from "../../components/form/Select";
+import Input from "../../components/form/input/InputField";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import DeleteIconButton from "../../components/ui/DeleteIconButton";
@@ -172,12 +174,7 @@ export default function CategoryManagement() {
                 <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${categories.length} of ${totalCount}` : ''}</div>
                 <div className="flex items-center gap-2">
                     <label className="text-sm text-gray-600">Page size</label>
-                    <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="input h-9">
-                        <option value={5}>5</option>
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                    </select>
+                    <Select options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }, { value: 50, label: '50' }]} defaultValue={pageSize} onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }} className="w-24" />
                     <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
                     <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
                 </div>
@@ -185,12 +182,9 @@ export default function CategoryManagement() {
 
             <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Category" : "Create Category"}>
                 <div className="flex flex-col gap-3">
-                    <input className="px-2 py-1 border rounded" placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                    <Input placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                     <label className="text-sm text-gray-600">Type</label>
-                    <select className="px-2 py-1 border rounded" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
-                        <option value="item">item</option>
-                        <option value="game">game</option>
-                    </select>
+                    <Select options={[{ value: 'item', label: 'item' }, { value: 'game', label: 'game' }]} defaultValue={form.type} onChange={(v: string | number) => setForm((f) => ({ ...f, type: String(v) }))} />
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
                             {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}

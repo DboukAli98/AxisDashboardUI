@@ -9,6 +9,8 @@ import {
     ItemListResponse,
 } from "../../services/itemService";
 import Modal from "../../components/ui/Modal";
+import Select from "../../components/form/Select";
+import Input from "../../components/form/input/InputField";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import DeleteIconButton from "../../components/ui/DeleteIconButton";
@@ -294,20 +296,32 @@ export default function Items() {
                 <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${items.length} of ${totalCount}` : ''}</div>
                 <div className="flex items-center gap-2">
                     <label className="text-sm text-gray-600">Page size</label>
-                    <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="input h-9">
-                        <option value={5}>5</option>
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                    </select>
+                    <Select
+                        options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }, { value: 50, label: '50' }]}
+                        defaultValue={pageSize}
+                        onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }}
+                        className="w-24"
+                    />
                     <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
                     <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
                 </div>
             </div>
 
-            <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Item" : "Create Item"}>
+            <Modal
+                isOpen={isFormOpen}
+                onClose={() => setIsFormOpen(false)}
+                title={editing ? "Edit Item" : "Create Item"}
+                footer={(
+                    <>
+                        <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
+                            {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}
+                        </button>
+                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setIsFormOpen(false)}>Cancel</button>
+                    </>
+                )}
+            >
                 <div className="flex flex-col gap-3">
-                    <input className="px-2 py-1 border rounded" placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                    <Input placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                     {/* Image upload area */}
                     <div
                         className="border border-dashed border-gray-300 rounded p-3 flex flex-col items-center justify-center text-center text-sm text-gray-500"
@@ -340,25 +354,14 @@ export default function Items() {
                         )}
                     </div>
                     <label className="text-sm text-gray-600">Quantity</label>
-                    <input type="number" className="px-2 py-1 border rounded" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
+                    <Input type="number" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
                     <label className="text-sm text-gray-600">Price (usd)</label>
-                    <input type="number" step="0.01" className="px-2 py-1 border rounded" placeholder="Price" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
-                    <input className="px-2 py-1 border rounded" placeholder="Type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
+                    <Input type="number" step={0.01} placeholder="Price" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
+                    <Input placeholder="Type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
                     <label className="text-sm text-gray-600">Category</label>
-                    <select className="px-2 py-1 border rounded" value={form.categoryId ?? ""} onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value === '' ? null : Number(e.target.value) }))}>
-                        <option value="">-- Select category --</option>
-                        {categories.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
+                    <Select options={[{ value: '', label: '-- Select category --' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} defaultValue={form.categoryId ?? ''} onChange={(v: string | number) => setForm((f) => ({ ...f, categoryId: v === '' ? null : Number(v) }))} />
                     <label className="text-sm text-gray-600">Status</label>
                     <StatusToggle value={form.statusId} onChange={(id) => setForm((f) => ({ ...f, statusId: id }))} />
-                    <div className="flex items-center gap-2">
-                        <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
-                            {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}
-                        </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setIsFormOpen(false)}>Cancel</button>
-                    </div>
                 </div>
             </Modal>
 

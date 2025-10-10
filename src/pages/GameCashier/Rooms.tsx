@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Modal from '../../components/ui/Modal';
+import Select from '../../components/form/Select';
 import { getRooms, RoomDto } from '../../services/roomsService';
 import { PcIcon, PlayStationIcon } from '../../icons';
 
@@ -63,11 +64,7 @@ export default function GameCashierRooms() {
                         <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${rooms.length} of ${totalCount}` : ''}</div>
                         <div className="flex items-center gap-2">
                             <label className="text-sm text-gray-600">Page size</label>
-                            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="input h-9">
-                                <option value={6}>6</option>
-                                <option value={12}>12</option>
-                                <option value={24}>24</option>
-                            </select>
+                            <Select options={[{ value: 6, label: '6' }, { value: 12, label: '12' }, { value: 24, label: '24' }]} defaultValue={pageSize} onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }} className="w-24" />
                             <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
                             <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
                         </div>

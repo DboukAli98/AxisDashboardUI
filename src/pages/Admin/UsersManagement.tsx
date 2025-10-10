@@ -139,12 +139,7 @@ export default function UsersManagement() {
                     <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="flex items-center gap-2">
                             <label className="text-sm text-gray-600">Rows:</label>
-                            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="border rounded px-2 py-1 text-sm">
-                                <option value={5}>5</option>
-                                <option value={10}>10</option>
-                                <option value={25}>25</option>
-                                <option value={50}>50</option>
-                            </select>
+                            <Select options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }, { value: 50, label: '50' }]} defaultValue={pageSize} onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }} className="w-24" />
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -179,7 +174,7 @@ export default function UsersManagement() {
                             options={[{ value: 'cashier', label: 'cashier' }, { value: 'admin', label: 'admin' }]}
                             placeholder="Select a role"
                             defaultValue={roleName}
-                            onChange={(v) => setRoleName(v)}
+                            onChange={(v: string | number) => setRoleName(String(v))}
                         />
                     </div>
 
