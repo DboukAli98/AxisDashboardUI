@@ -28,6 +28,7 @@ import GameSettings from "./pages/Admin/GameSettings";
 import GameSessions from "./pages/Admin/GameSessions";
 import Transactions from "./pages/Admin/Transactions";
 import Rooms from "./pages/Admin/Rooms";
+import GameCashierRooms from "./pages/GameCashier/Rooms";
 import Orders from "./pages/Admin/Orders";
 import CategoryManagement from "./pages/Admin/CategoryManagement";
 import CashierItems from './pages/Cashier/Items';
@@ -116,7 +117,7 @@ export default function App() {
               {/* GameCashie routes (non-admin paths) */}
 
               <Route path="/game/sessions" element={<GameCashieRoute><GameSession /></GameCashieRoute>} />
-              <Route path="/gamecashier/rooms" element={<GameCashieRoute><Rooms /></GameCashieRoute>} />
+              <Route path="/gamecashier/rooms" element={<GameCashieRoute><GameCashierRooms /></GameCashieRoute>} />
             </Route>
 
             {/* Auth Layout */}
