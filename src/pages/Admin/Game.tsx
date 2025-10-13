@@ -56,7 +56,7 @@ export default function Game() {
         getCategoriesByType('game', 1, 50)
             .then((res) => {
                 if (!mounted) return;
-                setCategories(res.items || []);
+                setCategories(res.data || []);
             })
             .catch(() => {
                 // ignore category load errors for now
@@ -70,7 +70,7 @@ export default function Game() {
         getGames(page, pageSize)
             .then((data) => {
                 if (!mounted) return;
-                setGames(data.items || []);
+                setGames(data.data || []);
                 setTotalCount(data.totalCount ?? null);
             })
             .catch((err) => {
@@ -127,7 +127,7 @@ export default function Game() {
                                         if (editingId) {
                                             const updated = await updateGame(editingId, { name, categoryId, statusId: payloadStatus });
                                             const refreshed = await getGames();
-                                            setGames(refreshed.items || []);
+                                            setGames(refreshed.data || []);
                                             setNotification({ variant: 'success', title: 'Updated', message: `Game '${updated.name}' updated` });
                                         } else {
                                             const created = await createGame({ name, categoryId, statusId: payloadStatus });

@@ -31,7 +31,7 @@ export default function Rooms() {
         getRooms(page, pageSize)
             .then(res => {
                 if (!mounted) return;
-                setRooms(res.items || []);
+                setRooms(res.data || []);
                 setTotalCount(res.totalCount ?? null);
             })
             .catch(() => { /* ignore */ })
@@ -41,7 +41,7 @@ export default function Rooms() {
 
     useEffect(() => {
         getCategoriesByType('game', 1, 100)
-            .then(res => setCategories(res.items || []))
+            .then(res => setCategories(res.data || []))
             .catch(() => { /* ignore */ });
     }, []);
 
@@ -71,7 +71,7 @@ export default function Rooms() {
                 await createRoom(body);
             }
             const refreshed = await getRooms(page, pageSize);
-            setRooms(refreshed.items || []);
+            setRooms(refreshed.data || []);
             setTotalCount(refreshed.totalCount ?? null);
             setIsOpen(false);
             setEditingId(null);
@@ -88,7 +88,7 @@ export default function Rooms() {
         try {
             await deleteRoom(deleteId);
             const refreshed = await getRooms(page, pageSize);
-            setRooms(refreshed.items || []);
+            setRooms(refreshed.data || []);
             setTotalCount(refreshed.totalCount ?? null);
             setDeleteId(null);
         } catch {

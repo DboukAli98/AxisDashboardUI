@@ -39,7 +39,7 @@ export default function GameSettings() {
         getSettings(page, pageSize)
             .then((res) => {
                 if (!mounted) return;
-                setSettings((res.items || []).map(s => {
+                setSettings((res.data || []).map(s => {
                     const it = s as Partial<GameSettingDto>;
                     return { ...(it as GameSettingDto), isOffer: !!it.isOffer } as GameSettingDto;
                 }));
@@ -57,13 +57,13 @@ export default function GameSettings() {
         // load games for dropdown (load many pages briefly)
         getGames(1, 100)
             .then((res) => {
-                setGames(res.items.map(g => ({ id: g.id, name: g.name })));
+                setGames(res.data.map(g => ({ id: g.id, name: g.name })));
             })
             .catch(() => { /* ignore */ });
         // load types (categories with type 'gameType')
         getCategoriesByType('gameSettingsType', 1, 200)
             .then((res) => {
-                setTypes(res.items || []);
+                setTypes(res.data || []);
             })
             .catch(() => { /* ignore */ });
     }, []);
@@ -96,7 +96,7 @@ export default function GameSettings() {
             }
             // refresh list
             const refreshed = await getSettings(page, pageSize);
-            setSettings((refreshed.items || []).map(s => {
+            setSettings((refreshed.data || []).map(s => {
                 const it = s as Partial<GameSettingDto>;
                 return { ...(it as GameSettingDto), isOffer: !!it.isOffer } as GameSettingDto;
             }));
@@ -116,7 +116,7 @@ export default function GameSettings() {
         try {
             await deleteSetting(deleteId);
             const refreshed = await getSettings(page, pageSize);
-            setSettings((refreshed.items || []).map(s => {
+            setSettings((refreshed.data || []).map(s => {
                 const it = s as Partial<GameSettingDto>;
                 return { ...(it as GameSettingDto), isOffer: !!it.isOffer } as GameSettingDto;
             }));

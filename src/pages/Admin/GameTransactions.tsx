@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getItemTransactions, ItemTransaction } from '../../services/transactionService';
+import { getGameTransactions, GameTransaction } from '../../services/transactionService';
 import { getStatusName, STATUS_ENABLED } from '../../services/statuses';
 
-export default function Transactions() {
-    const [items, setItems] = useState<ItemTransaction[]>([]);
+export default function GameTransactions() {
+    const [items, setItems] = useState<GameTransaction[]>([]);
     const [page, setPage] = useState(1);
     const [pageSize] = useState(10);
     const [total, setTotal] = useState(0);
@@ -27,13 +27,13 @@ export default function Transactions() {
         async function load() {
             setLoading(true);
             try {
-                const res = await getItemTransactions({ Page: page, PageSize: pageSize });
+                const res = await getGameTransactions({ Page: page, PageSize: pageSize });
                 if (!cancelled) {
                     setItems(res.data || []);
                     setTotal(res.totalCount || 0);
                 }
             } catch (err) {
-                console.error('Failed to load item transactions', err);
+                console.error('Failed to load game transactions', err);
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -48,7 +48,7 @@ export default function Transactions() {
 
     return (
         <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Item Transactions</h2>
+            <h2 className="text-xl font-semibold mb-4">Game Transactions</h2>
 
             <div className="bg-white shadow rounded-md overflow-hidden">
                 <div className="space-y-4 p-4">
@@ -83,6 +83,30 @@ export default function Transactions() {
                                                     <div className="text-xs text-gray-500">Total Paid</div>
                                                     <div className="text-sm font-semibold text-gray-900">${t.totalPrice.toFixed(2)}</div>
                                                 </div>
+                                                {t.gameName && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Game</div>
+                                                        <div className="text-sm font-medium text-gray-900">{t.gameName}</div>
+                                                    </div>
+                                                )}
+                                                {t.gameCategoryName && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Game Category</div>
+                                                        <div className="text-sm text-gray-900">{t.gameCategoryName}</div>
+                                                    </div>
+                                                )}
+                                                {t.gameTypeName && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Game Type</div>
+                                                        <div className="text-sm text-gray-900">{t.gameTypeName}</div>
+                                                    </div>
+                                                )}
+                                                {t.gameSettingName && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Game Setting</div>
+                                                        <div className="text-sm text-gray-900">{t.gameSettingName}</div>
+                                                    </div>
+                                                )}
                                                 {t.roomName && (
                                                     <div>
                                                         <div className="text-xs text-gray-500">Room</div>
@@ -93,6 +117,12 @@ export default function Transactions() {
                                                     <div>
                                                         <div className="text-xs text-gray-500">Set</div>
                                                         <div className="text-sm text-gray-900">{t.setName}</div>
+                                                    </div>
+                                                )}
+                                                {t.hours > 0 && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Hours</div>
+                                                        <div className="text-sm text-gray-900">{t.hours}</div>
                                                     </div>
                                                 )}
                                                 <div>
@@ -122,7 +152,7 @@ export default function Transactions() {
                                         </div>
                                     </div>
 
-                                    {isExpanded && (
+                                    {isExpanded && t.items.length > 0 && (
                                         <div className="border-t bg-gray-50 p-4">
                                             <div className="text-xs font-medium text-gray-700 mb-3">Items Detail</div>
                                             <div className="space-y-2">

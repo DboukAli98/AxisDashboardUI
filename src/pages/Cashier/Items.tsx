@@ -77,7 +77,7 @@ export default function CashierItems() {
         getItems(page, pageSize, selectedCategory, debouncedSearch)
             .then((data: ItemListResponse) => {
                 if (!mounted) return;
-                setItems(data.items || []);
+                setItems(data.data || []);
                 setTotal(data.totalCount || 0);
             })
             .catch((err) => {
@@ -103,7 +103,7 @@ export default function CashierItems() {
         getTransactions({ page: ordersPage, pageSize: ordersPageSize, createdBy: name })
             .then((res) => {
                 if (!mounted) return;
-                setOrders(res.items || []);
+                setOrders(res.data || []);
                 setOrdersTotal(res.totalCount || 0);
             })
             .catch(() => {
@@ -126,7 +126,7 @@ export default function CashierItems() {
         getCategoriesByType('item', 1, 100)
             .then((res) => {
                 if (!mounted) return;
-                setCategories(res.items || []);
+                setCategories(res.data || []);
             })
             .catch(() => {
                 /* ignore */

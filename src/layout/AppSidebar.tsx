@@ -111,7 +111,14 @@ const AppSidebar: React.FC = () => {
             { name: "Settings", path: "/admin/game-settings" },
           ],
         },
-        { icon: <PieChartIcon />, name: "Transactions", path: "/admin/transactions" },
+        {
+          icon: <PieChartIcon />,
+          name: "Transactions",
+          subItems: [
+            { name: "Item Transactions", path: "/admin/transactions" },
+            { name: "Game Transactions", path: "/admin/game-transactions" },
+          ],
+        },
         { icon: <TableIcon />, name: "Rooms", path: "/admin/rooms" },
       ];
     }

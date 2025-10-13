@@ -20,7 +20,7 @@ const CashierOrders: React.FC = () => {
         getTransactions({ page, pageSize, createdBy: name })
             .then((res) => {
                 if (!mounted) return;
-                setOrders(res.items || []);
+                setOrders(res.data || []);
                 setTotal(res.totalCount || 0);
             })
             .catch(() => {

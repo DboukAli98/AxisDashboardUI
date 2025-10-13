@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 export type RoomDto = {
   id: string;
@@ -12,13 +12,18 @@ export type RoomDto = {
 
 export type PagedRoomsResponse = {
   totalCount: number;
-  items: RoomDto[];
+  data: RoomDto[];
   pageNumber?: number;
   pageSize?: number;
 };
 
-export async function getRooms(page = 1, pageSize = 10): Promise<PagedRoomsResponse> {
-  const res = await api.get<PagedRoomsResponse>(`/room?Page=${page}&PageSize=${pageSize}`);
+export async function getRooms(
+  page = 1,
+  pageSize = 10
+): Promise<PagedRoomsResponse> {
+  const res = await api.get<PagedRoomsResponse>(
+    `/room?Page=${page}&PageSize=${pageSize}`
+  );
   return res.data;
 }
 
@@ -34,11 +39,14 @@ export type CreateRoomRequest = {
 };
 
 export async function createRoom(body: CreateRoomRequest): Promise<RoomDto> {
-  const res = await api.post<RoomDto>('/room', body);
+  const res = await api.post<RoomDto>("/room", body);
   return res.data;
 }
 
-export async function updateRoom(id: string, body: CreateRoomRequest): Promise<void> {
+export async function updateRoom(
+  id: string,
+  body: CreateRoomRequest
+): Promise<void> {
   await api.put<void>(`/room/${id}`, body);
 }
 

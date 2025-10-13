@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 export type CategoryDto = {
   id: number;
@@ -8,23 +8,36 @@ export type CategoryDto = {
 
 export type PagedCategoryResponse = {
   totalCount: number;
-  items: CategoryDto[];
+  data: CategoryDto[];
   pageNumber?: number;
   pageSize?: number;
 };
 
 export type CategoryListResponse = {
   totalCount: number;
-  items: CategoryDto[];
+  data: CategoryDto[];
 };
 
-export async function getCategories(page = 1, pageSize = 10): Promise<CategoryListResponse> {
-  const res = await api.get<CategoryListResponse>(`/category?Page=${page}&PageSize=${pageSize}`);
+export async function getCategories(
+  page = 1,
+  pageSize = 10
+): Promise<CategoryListResponse> {
+  const res = await api.get<CategoryListResponse>(
+    `/category?Page=${page}&PageSize=${pageSize}`
+  );
   return res.data;
 }
 
-export async function getCategoriesByType(type = 'game', page = 1, pageSize = 10): Promise<PagedCategoryResponse> {
-  const res = await api.get<PagedCategoryResponse>(`/category/type/${encodeURIComponent(type)}?Page=${page}&PageSize=${pageSize}`);
+export async function getCategoriesByType(
+  type = "game",
+  page = 1,
+  pageSize = 10
+): Promise<PagedCategoryResponse> {
+  const res = await api.get<PagedCategoryResponse>(
+    `/category/type/${encodeURIComponent(
+      type
+    )}?Page=${page}&PageSize=${pageSize}`
+  );
   return res.data;
 }
 
@@ -33,12 +46,18 @@ export async function getCategoryById(id: number): Promise<CategoryDto> {
   return res.data;
 }
 
-export async function createCategory(payload: { name: string; type: string; }): Promise<CategoryDto> {
+export async function createCategory(payload: {
+  name: string;
+  type: string;
+}): Promise<CategoryDto> {
   const res = await api.post<CategoryDto>(`/category`, payload);
   return res.data;
 }
 
-export async function updateCategory(id: number, payload: { name: string; type: string; }): Promise<void> {
+export async function updateCategory(
+  id: number,
+  payload: { name: string; type: string }
+): Promise<void> {
   await api.put(`/category/${id}`, payload);
 }
 

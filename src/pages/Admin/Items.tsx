@@ -82,7 +82,7 @@ export default function Items() {
         getItems(page, pageSize)
             .then((data: ItemListResponse) => {
                 if (!mounted) return;
-                setItems(data.items || []);
+                setItems(data.data || []);
                 setTotalCount(data.totalCount ?? null);
             })
             .catch((err) => {
@@ -104,7 +104,7 @@ export default function Items() {
         getCategoriesByType('item', 1, 100)
             .then((res) => {
                 if (!mounted) return;
-                setCategories(res.items || []);
+                setCategories(res.data || []);
             })
             .catch(() => {
                 /* ignore */

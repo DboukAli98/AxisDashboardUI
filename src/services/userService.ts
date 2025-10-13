@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 export type UserDto = {
   id: string;
@@ -9,10 +9,13 @@ export type UserDto = {
 
 export type UserListResponse = {
   totalCount: number;
-  items: UserDto[];
+  data: UserDto[];
 };
 
-export const getUsers = async (page = 1, pageSize = 10): Promise<UserListResponse> => {
+export const getUsers = async (
+  page = 1,
+  pageSize = 10
+): Promise<UserListResponse> => {
   const res = await api.get(`/users?Page=${page}&PageSize=${pageSize}`);
   return res.data as UserListResponse;
 };
@@ -25,7 +28,7 @@ export type RegisterRequest = {
 };
 
 export const registerUser = async (body: RegisterRequest) => {
-  const res = await api.post('/auth/register', body);
+  const res = await api.post("/auth/register", body);
   return res.data;
 };
 

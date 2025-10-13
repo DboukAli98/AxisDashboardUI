@@ -57,7 +57,7 @@ export default function CategoryManagement() {
         getCategories(page, pageSize)
             .then((res: CategoryListResponse) => {
                 if (!mounted) return;
-                setCategories(res.items || []);
+                setCategories(res.data || []);
                 setTotalCount(res.totalCount ?? null);
             })
             .catch((err) => {

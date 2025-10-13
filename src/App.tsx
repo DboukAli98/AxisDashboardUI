@@ -27,6 +27,7 @@ import Game from "./pages/Admin/Game";
 import GameSettings from "./pages/Admin/GameSettings";
 import GameSessions from "./pages/Admin/GameSessions";
 import Transactions from "./pages/Admin/Transactions";
+import GameTransactions from "./pages/Admin/GameTransactions";
 import Rooms from "./pages/Admin/Rooms";
 import GameCashierRooms from "./pages/GameCashier/Rooms";
 import Orders from "./pages/Admin/Orders";
@@ -112,6 +113,7 @@ export default function App() {
               <Route path="/admin/game-settings" element={<AdminRoute><GameSettings /></AdminRoute>} />
               <Route path="/admin/game-sessions" element={<AdminRoute><GameSessions /></AdminRoute>} />
               <Route path="/admin/transactions" element={<AdminRoute><Transactions /></AdminRoute>} />
+              <Route path="/admin/game-transactions" element={<AdminRoute><GameTransactions /></AdminRoute>} />
               <Route path="/admin/rooms" element={<AdminRoute><Rooms /></AdminRoute>} />
               <Route path="/admin/categories" element={<AdminRoute><CategoryManagement /></AdminRoute>} />
               {/* GameCashie routes (non-admin paths) */}

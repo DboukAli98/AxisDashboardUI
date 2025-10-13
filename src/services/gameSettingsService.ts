@@ -24,7 +24,7 @@ export type GameSettingDto = {
 
 export type PagedSettingsResponse = {
   totalCount: number;
-  items: GameSettingDto[];
+  data: GameSettingDto[];
   pageNumber?: number;
   pageSize?: number;
 };

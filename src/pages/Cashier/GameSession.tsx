@@ -34,7 +34,7 @@ const GameSession: React.FC = () => {
         getGames(page, PAGE_SIZE)
             .then((res) => {
                 if (!mounted) return;
-                setGames(res.items || []);
+                setGames(res.data || []);
                 setTotalCount(res.totalCount ?? null);
             })
             .catch((err) => {
@@ -50,7 +50,7 @@ const GameSession: React.FC = () => {
         getSettings(1, 1000)
             .then((res) => {
                 if (!mounted) return;
-                setSettings(res.items || []);
+                setSettings(res.data || []);
             })
             .catch(() => {
                 // ignore settings errors for now or show a lighter UI

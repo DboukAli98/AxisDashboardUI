@@ -29,7 +29,7 @@ export default function UsersManagement() {
         setLoading(true);
         try {
             const res = await userService.getUsers(page, pageSize);
-            setUsers(res.items);
+            setUsers(res.data);
             setTotalCount(res.totalCount ?? 0);
         } catch (e: unknown) {
             console.error(e);
