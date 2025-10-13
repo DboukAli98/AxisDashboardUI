@@ -319,6 +319,7 @@ const GameSession: React.FC = () => {
                                         hours: startHours,
                                         status: String(STATUS_ENABLED),
                                         setId: isOpenSetRoom ? undefined : selectedSetId!,
+                                        isOpenHour: selectedSetting.isOpenHour,
                                     });
                                     setToast({ variant: 'success', title: 'Session started', message: `Session created` });
                                     setStartModalOpen(false);

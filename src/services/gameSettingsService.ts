@@ -16,6 +16,7 @@ export type GameSettingDto = {
   gameName?: string;
   hours?: number;
   price?: number;
+  isOpenHour?: boolean;
   createdOn?: string | null;
   modifiedOn?: string | null;
   attributes: SettingAttribute[];
@@ -45,6 +46,7 @@ export type CreateSettingRequest = {
   gameId: string;
   hours?: number;
   price?: number;
+  isOpenHour?: boolean;
 };
 
 export async function createSetting(body: CreateSettingRequest) {

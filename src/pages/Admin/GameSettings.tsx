@@ -90,6 +90,7 @@ export default function GameSettings() {
                 gameId: newGameId,
                 hours: isOpenHour ? 0 : (newHours === '' ? undefined : newHours),
                 price: newPrice === '' ? undefined : newPrice,
+                isOpenHour: isOpenHour,
             };
             if (editingId) {
                 await updateSetting(editingId, body);

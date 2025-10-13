@@ -6,6 +6,7 @@ export type CreateGameSessionRequest = {
   hours: number;
   status: string; // status id
   setId?: number; // optional set id
+  isOpenHour?: boolean;
 };
 
 export async function createGameSession(body: CreateGameSessionRequest) {
@@ -18,6 +19,9 @@ export async function createGameSession(body: CreateGameSessionRequest) {
   };
   if (body.setId !== undefined) {
     params.setId = body.setId;
+  }
+  if (body.isOpenHour !== undefined) {
+    params.isOpenHour = body.isOpenHour;
   }
   const res = await api.post("/transactions/CreateGameSession", null, {
     params,
