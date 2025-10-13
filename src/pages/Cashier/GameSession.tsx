@@ -6,8 +6,11 @@ import Loader from '../../components/ui/Loader';
 import Modal from '../../components/ui/Modal';
 import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
+import Select from '../../components/form/Select';
 import Alert from '../../components/ui/alert/Alert';
 import { createGameSession } from '../../services/gameSession';
+import { getRooms, RoomDto } from '../../services/roomsService';
+import { getSetAvailability, SetAvailabilityDto } from '../../services/setService';
 // ...existing imports...
 
 const PAGE_SIZE = 8;
@@ -25,7 +28,12 @@ const GameSession: React.FC = () => {
     const [starting, setStarting] = useState(false);
     const [toast, setToast] = useState<{ variant: 'success' | 'error' | 'info', title: string, message: string } | null>(null);
 
-    useEffect(() => {
+    // Room and set selection
+    const [rooms, setRooms] = useState<RoomDto[]>([]);
+    const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+    const [setAvailability, setSetAvailability] = useState<SetAvailabilityDto | null>(null);
+    const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
+    const [loadingAvailability, setLoadingAvailability] = useState(false); useEffect(() => {
         let mounted = true;
         setLoading(true);
         setError(null);
@@ -58,6 +66,38 @@ const GameSession: React.FC = () => {
 
         return () => { mounted = false; };
     }, [page]);
+
+    // Load rooms for set selection
+    useEffect(() => {
+        let mounted = true;
+        getRooms(1, 100)
+            .then((res) => {
+                if (!mounted) return;
+                setRooms(res.data || []);
+            })
+            .catch(() => { /* ignore */ });
+        return () => { mounted = false; };
+    }, []);
+
+    // Load set availability when room is selected
+    useEffect(() => {
+        if (!selectedRoomId || !startModalOpen) {
+            setSetAvailability(null);
+            setSelectedSetId(null);
+            return;
+        }
+        let mounted = true;
+        setLoadingAvailability(true);
+        const roomIdNum = Number(selectedRoomId);
+        getSetAvailability(roomIdNum, 1)
+            .then((res) => {
+                if (!mounted) return;
+                setSetAvailability(res);
+            })
+            .catch(() => { /* ignore */ })
+            .finally(() => { if (mounted) setLoadingAvailability(false); });
+        return () => { mounted = false; };
+    }, [selectedRoomId, startModalOpen]);
 
     const settingsByGame = useMemo(() => {
         const map = new Map<string, GameSettingDto[]>();
@@ -149,9 +189,59 @@ const GameSession: React.FC = () => {
                 </>
             )}
             {/* Start session modal */}
-            <Modal isOpen={startModalOpen} onClose={() => setStartModalOpen(false)} title={selectedSetting ? `Start: ${selectedSetting.name}` : 'Start session'}>
+            <Modal isOpen={startModalOpen} onClose={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }} title={selectedSetting ? `Start: ${selectedSetting.name}` : 'Start session'}>
                 <div className="space-y-4">
                     {toast && <Alert variant={toast.variant} title={toast.title} message={toast.message} />}
+
+                    <div>
+                        <Label>Room</Label>
+                        <Select
+                            options={[{ value: '', label: 'Select a room' }, ...rooms.map(r => ({ value: r.id, label: r.name }))]}
+                            defaultValue={selectedRoomId ?? ''}
+                            onChange={(v) => setSelectedRoomId(v === '' ? null : String(v))}
+                        />
+                    </div>
+
+                    {selectedRoomId && loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
+
+                    {selectedRoomId && !loadingAvailability && setAvailability && (
+                        <div>
+                            <Label>Select Set</Label>
+                            <div className="flex gap-3 text-xs mb-2">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 bg-green-100 border-2 border-green-500 rounded"></div>
+                                    <span>Available ({setAvailability.availableCount})</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 bg-red-100 border-2 border-red-500 rounded"></div>
+                                    <span>Occupied ({setAvailability.unavailableCount})</span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-6 gap-2">
+                                {setAvailability.available.map((set) => (
+                                    <button
+                                        key={set.id}
+                                        onClick={() => setSelectedSetId(set.id)}
+                                        className={`px-2 py-2 rounded-lg border-2 text-center text-sm font-medium transition ${selectedSetId === set.id
+                                            ? 'border-blue-600 bg-blue-100 text-blue-700'
+                                            : 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
+                                            }`}
+                                    >
+                                        {set.name}
+                                    </button>
+                                ))}
+                                {setAvailability.unavailable.map((set) => (
+                                    <div
+                                        key={set.id}
+                                        className="px-2 py-2 rounded-lg border-2 border-red-500 bg-red-50 text-center text-sm font-medium text-red-700 cursor-not-allowed opacity-60"
+                                    >
+                                        {set.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div>
                         <Label>Hours</Label>
                         <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={!!selectedSetting?.isOffer} />
@@ -164,31 +254,40 @@ const GameSession: React.FC = () => {
                         <div className="text-lg font-semibold">${(selectedSetting?.price ?? 0) * startHours}</div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={async () => {
-                            if (!selectedSetting) return;
-                            setStarting(true);
-                            try {
-                                await createGameSession({
-                                    gameId: selectedSetting.gameId,
-                                    gameSettingId: selectedSetting.id,
-                                    hours: startHours,
-                                    status: String(STATUS_ENABLED),
-                                });
-                                setToast({ variant: 'success', title: 'Session started', message: `Session created` });
-                                setStartModalOpen(false);
-                            } catch (e: unknown) {
-                                let message = 'Failed to start session';
-                                if (e && typeof e === 'object') {
-                                    const maybe = e as { message?: unknown };
-                                    if (typeof maybe.message === 'string') message = maybe.message;
+                        <button
+                            className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!selectedSetId}
+                            onClick={async () => {
+                                if (!selectedSetting || !selectedSetId) return;
+                                setStarting(true);
+                                try {
+                                    await createGameSession({
+                                        gameId: selectedSetting.gameId,
+                                        gameSettingId: selectedSetting.id,
+                                        hours: startHours,
+                                        status: String(STATUS_ENABLED),
+                                        setId: selectedSetId,
+                                    });
+                                    setToast({ variant: 'success', title: 'Session started', message: `Session created` });
+                                    setStartModalOpen(false);
+                                    setSelectedRoomId(null);
+                                    setSelectedSetId(null);
+                                } catch (e: unknown) {
+                                    let message = 'Failed to start session';
+                                    if (e && typeof e === 'object') {
+                                        const maybe = e as { message?: unknown };
+                                        if (typeof maybe.message === 'string') message = maybe.message;
+                                    }
+                                    setToast({ variant: 'error', title: 'Failed', message });
+                                } finally {
+                                    setStarting(false);
+                                    setTimeout(() => setToast(null), 3000);
                                 }
-                                setToast({ variant: 'error', title: 'Failed', message });
-                            } finally {
-                                setStarting(false);
-                                setTimeout(() => setToast(null), 3000);
-                            }
-                        }}>{starting ? <Loader size={14} /> : 'Submit'}</button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setStartModalOpen(false)}>Cancel</button>
+                            }}
+                        >
+                            {starting ? <Loader size={14} /> : 'Submit'}
+                        </button>
+                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }}>Cancel</button>
                     </div>
                 </div>
             </Modal>

@@ -26,6 +26,14 @@ export type SetsQuery = {
   Search?: string;
 };
 
+export type SetAvailabilityDto = {
+  roomId: number;
+  available: Array<{ id: number; name: string }>;
+  unavailable: Array<{ id: number; name: string }>;
+  availableCount: number;
+  unavailableCount: number;
+};
+
 export async function getSets(query: SetsQuery = {}) {
   const params: Record<string, unknown> = {};
   if (query.Page !== undefined) params.Page = query.Page;
@@ -55,4 +63,24 @@ export async function deleteSet(id: number) {
   await del<void>(`/Set/${id}`);
 }
 
-export default { getSets, getSetById, createSet, updateSet, deleteSet };
+export async function getSetAvailability(
+  roomId: number,
+  ongoingStatusId: number = 1
+) {
+  const res = await get<SetAvailabilityDto>(
+    `/room/${roomId}/sets/availability`,
+    {
+      params: { ongoingStatusId },
+    }
+  );
+  return res;
+}
+
+export default {
+  getSets,
+  getSetById,
+  createSet,
+  updateSet,
+  deleteSet,
+  getSetAvailability,
+};

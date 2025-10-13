@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Modal from '../../components/ui/Modal';
 import Select from '../../components/form/Select';
 import { getRooms, RoomDto } from '../../services/roomsService';
+import { getSetAvailability, SetAvailabilityDto } from '../../services/setService';
 import { PcIcon, PlayStationIcon } from '../../icons';
 
 export default function GameCashierRooms() {
@@ -11,6 +12,8 @@ export default function GameCashierRooms() {
     const [pageSize, setPageSize] = useState(12);
     const [totalCount, setTotalCount] = useState<number | null>(null);
     const [selectedRoom, setSelectedRoom] = useState<RoomDto | null>(null);
+    const [setAvailability, setSetAvailability] = useState<SetAvailabilityDto | null>(null);
+    const [loadingAvailability, setLoadingAvailability] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -18,13 +21,31 @@ export default function GameCashierRooms() {
         getRooms(page, pageSize)
             .then(res => {
                 if (!mounted) return;
-                setRooms(res.items || []);
+                setRooms(res.data || []);
                 setTotalCount(res.totalCount ?? null);
             })
             .catch(() => { /* ignore */ })
             .finally(() => { if (mounted) setLoading(false); });
         return () => { mounted = false; };
     }, [page, pageSize]);
+
+    useEffect(() => {
+        if (!selectedRoom) {
+            setSetAvailability(null);
+            return;
+        }
+        let mounted = true;
+        setLoadingAvailability(true);
+        const roomIdNum = Number(selectedRoom.id);
+        getSetAvailability(roomIdNum, 1)
+            .then(res => {
+                if (!mounted) return;
+                setSetAvailability(res);
+            })
+            .catch(() => { /* ignore */ })
+            .finally(() => { if (mounted) setLoadingAvailability(false); });
+        return () => { mounted = false; };
+    }, [selectedRoom]);
 
     return (
         <div className="p-6">
@@ -75,12 +96,34 @@ export default function GameCashierRooms() {
             <Modal isOpen={!!selectedRoom} onClose={() => setSelectedRoom(null)} title={selectedRoom ? selectedRoom.name : 'Room'}>
                 <div className="space-y-4">
                     <div className="text-sm text-gray-600">Category: {selectedRoom?.categoryName ?? selectedRoom?.categoryId}</div>
-                    <div className="text-sm text-gray-600">Sets available:</div>
-                    <div className="grid grid-cols-6 gap-2">
-                        {Array.from({ length: selectedRoom?.sets ?? 0 }).map((_, i) => (
-                            <div key={i} className="px-2 py-1 rounded-lg border border-gray-200 bg-gray-50 text-center text-sm text-gray-700">{i + 1}</div>
-                        ))}
-                    </div>
+                    {loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
+                    {!loadingAvailability && setAvailability && (
+                        <>
+                            <div className="text-sm font-medium text-gray-700">Sets Availability:</div>
+                            <div className="flex gap-4 text-xs mb-2">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-4 h-4 bg-green-100 border-2 border-green-500 rounded"></div>
+                                    <span>Available ({setAvailability.availableCount})</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-4 h-4 bg-red-100 border-2 border-red-500 rounded"></div>
+                                    <span>Occupied ({setAvailability.unavailableCount})</span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-6 gap-2">
+                                {setAvailability.available.map((set) => (
+                                    <div key={set.id} className="px-2 py-2 rounded-lg border-2 border-green-500 bg-green-50 text-center text-sm font-medium text-green-700 cursor-default">
+                                        {set.name}
+                                    </div>
+                                ))}
+                                {setAvailability.unavailable.map((set) => (
+                                    <div key={set.id} className="px-2 py-2 rounded-lg border-2 border-red-500 bg-red-50 text-center text-sm font-medium text-red-700 cursor-not-allowed opacity-60">
+                                        {set.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
             </Modal>
         </div>
