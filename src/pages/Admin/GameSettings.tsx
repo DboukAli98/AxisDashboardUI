@@ -6,6 +6,7 @@ import Modal from '../../components/ui/Modal';
 import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
+import Switch from '../../components/form/switch/Switch';
 import DeleteIconButton from '../../components/ui/DeleteIconButton';
 
 export default function GameSettings() {
@@ -21,6 +22,7 @@ export default function GameSettings() {
     const [isOpen, setIsOpen] = useState(false);
     const [newName, setNewName] = useState('');
     const [newType, setNewType] = useState('');
+    const [newIsOffer, setNewIsOffer] = useState(false);
     const [newGameId, setNewGameId] = useState('');
     const [newHours, setNewHours] = useState<number | ''>('');
     const [newPrice, setNewPrice] = useState<number | ''>('');
@@ -37,7 +39,10 @@ export default function GameSettings() {
         getSettings(page, pageSize)
             .then((res) => {
                 if (!mounted) return;
-                setSettings(res.items || []);
+                setSettings((res.items || []).map(s => {
+                    const it = s as Partial<GameSettingDto>;
+                    return { ...(it as GameSettingDto), isOffer: !!it.isOffer } as GameSettingDto;
+                }));
                 setTotalCount(res.totalCount ?? null);
             })
             .catch(() => {
@@ -66,6 +71,7 @@ export default function GameSettings() {
     const openModal = () => {
         setNewName('');
         setNewType(types[0]?.name || '');
+        setNewIsOffer(false);
         setNewGameId(games[0]?.id || '');
         setNewHours('');
         setNewPrice('');
@@ -78,6 +84,7 @@ export default function GameSettings() {
             const body: CreateSettingRequest = {
                 name: newName,
                 type: newType,
+                isOffer: newIsOffer,
                 gameId: newGameId,
                 hours: newHours === '' ? undefined : newHours,
                 price: newPrice === '' ? undefined : newPrice,
@@ -89,7 +96,10 @@ export default function GameSettings() {
             }
             // refresh list
             const refreshed = await getSettings(page, pageSize);
-            setSettings(refreshed.items || []);
+            setSettings((refreshed.items || []).map(s => {
+                const it = s as Partial<GameSettingDto>;
+                return { ...(it as GameSettingDto), isOffer: !!it.isOffer } as GameSettingDto;
+            }));
             setTotalCount(refreshed.totalCount ?? null);
             setIsOpen(false);
             setEditingId(null);
@@ -106,7 +116,10 @@ export default function GameSettings() {
         try {
             await deleteSetting(deleteId);
             const refreshed = await getSettings(page, pageSize);
-            setSettings(refreshed.items || []);
+            setSettings((refreshed.items || []).map(s => {
+                const it = s as Partial<GameSettingDto>;
+                return { ...(it as GameSettingDto), isOffer: !!it.isOffer } as GameSettingDto;
+            }));
             setTotalCount(refreshed.totalCount ?? null);
             setDeleteId(null);
         } catch {
@@ -134,6 +147,7 @@ export default function GameSettings() {
                                 <tr>
                                     <th className="text-left px-4 py-2">Name</th>
                                     <th className="text-left px-4 py-2">Type</th>
+                                    <th className="text-left px-4 py-2">Offer</th>
                                     <th className="text-left px-4 py-2">Game</th>
                                     <th className="text-left px-4 py-2">Hours</th>
                                     <th className="text-left px-4 py-2">Price</th>
@@ -146,6 +160,7 @@ export default function GameSettings() {
                                     <tr key={s.id} className="border-t">
                                         <td className="px-4 py-2 align-top">{s.name}</td>
                                         <td className="px-4 py-2 align-top">{s.type}</td>
+                                        <td className="px-4 py-2 align-top">{s.isOffer ? 'Yes' : 'No'}</td>
                                         <td className="px-4 py-2 align-top">{s.gameName ?? (games.find(g => g.id === s.gameId)?.name ?? s.gameId)}</td>
                                         <td className="px-4 py-2 align-top">{typeof s.hours === 'number' ? s.hours : '-'}</td>
                                         <td className="px-4 py-2 align-top">{typeof s.price === 'number' ? s.price : '-'}</td>
@@ -158,6 +173,7 @@ export default function GameSettings() {
                                                     setEditingId(s.id);
                                                     setNewName(s.name);
                                                     setNewType(s.type);
+                                                    setNewIsOffer(!!s.isOffer);
                                                     setNewGameId(s.gameId);
                                                     setNewHours(typeof s.hours === 'number' ? s.hours : '');
                                                     setNewPrice(typeof s.price === 'number' ? s.price : '');
@@ -208,6 +224,12 @@ export default function GameSettings() {
                             placeholder="Select a type"
                             onChange={(v) => setNewType(typeof v === 'number' ? String(v) : v)}
                         />
+                    </div>
+                    <div>
+                        <Label>Offer</Label>
+                        <div className="flex items-center gap-2">
+                            <Switch key={String(newIsOffer)} label="Is this an offer?" defaultChecked={newIsOffer} onChange={(checked) => setNewIsOffer(checked)} />
+                        </div>
                     </div>
                     <div>
                         <Label>Hours</Label>

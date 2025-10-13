@@ -154,8 +154,8 @@ const GameSession: React.FC = () => {
                     {toast && <Alert variant={toast.variant} title={toast.title} message={toast.message} />}
                     <div>
                         <Label>Hours</Label>
-                        <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={selectedSetting?.type === 'offer'} />
-                        {selectedSetting?.type === 'offer' && (
+                        <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={!!selectedSetting?.isOffer} />
+                        {selectedSetting?.isOffer && (
                             <div className="text-xs text-gray-500 mt-1">This setting is an offer — duration is fixed.</div>
                         )}
                     </div>

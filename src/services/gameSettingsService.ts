@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 export type SettingAttribute = {
   id: string;
@@ -11,6 +11,7 @@ export type GameSettingDto = {
   id: string;
   name: string;
   type: string;
+  isOffer?: boolean;
   gameId: string;
   gameName?: string;
   hours?: number;
@@ -28,20 +29,26 @@ export type PagedSettingsResponse = {
   pageSize?: number;
 };
 
-export async function getSettings(page = 1, pageSize = 10): Promise<PagedSettingsResponse> {
-  const res = await api.get<PagedSettingsResponse>(`/setting?Page=${page}&PageSize=${pageSize}`);
+export async function getSettings(
+  page = 1,
+  pageSize = 10
+): Promise<PagedSettingsResponse> {
+  const res = await api.get<PagedSettingsResponse>(
+    `/setting?Page=${page}&PageSize=${pageSize}`
+  );
   return res.data;
 }
 export type CreateSettingRequest = {
   name: string;
   type: string;
+  isOffer?: boolean;
   gameId: string;
   hours?: number;
   price?: number;
 };
 
 export async function createSetting(body: CreateSettingRequest) {
-  const res = await api.post<GameSettingDto>('/setting', body);
+  const res = await api.post<GameSettingDto>("/setting", body);
   return res.data as GameSettingDto;
 }
 
@@ -56,4 +63,3 @@ export async function deleteSetting(id: string) {
 }
 
 export default { getSettings, createSetting, updateSetting, deleteSetting };
-
