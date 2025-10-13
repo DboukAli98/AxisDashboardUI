@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getSettings, GameSettingDto, createSetting, CreateSettingRequest, updateSetting, deleteSetting } from '../../services/gameSettingsService';
 import { getGames } from '../../services/gameService';
+import { getCategoriesByType, CategoryDto } from '../../services/categoryService';
 import Modal from '../../components/ui/Modal';
 import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
@@ -14,6 +15,7 @@ export default function GameSettings() {
     const [pageSize, setPageSize] = useState<number>(10);
     const [totalCount, setTotalCount] = useState<number | null>(null);
     const [games, setGames] = useState<Array<{ id: string; name: string }>>([]);
+    const [types, setTypes] = useState<CategoryDto[]>([]);
 
     // add modal state
     const [isOpen, setIsOpen] = useState(false);
@@ -53,11 +55,17 @@ export default function GameSettings() {
                 setGames(res.items.map(g => ({ id: g.id, name: g.name })));
             })
             .catch(() => { /* ignore */ });
+        // load types (categories with type 'gameType')
+        getCategoriesByType('gameSettingsType', 1, 200)
+            .then((res) => {
+                setTypes(res.items || []);
+            })
+            .catch(() => { /* ignore */ });
     }, []);
 
     const openModal = () => {
         setNewName('');
-        setNewType('');
+        setNewType(types[0]?.name || '');
         setNewGameId(games[0]?.id || '');
         setNewHours('');
         setNewPrice('');
@@ -194,7 +202,12 @@ export default function GameSettings() {
                     </div>
                     <div>
                         <Label>Type</Label>
-                        <Input value={newType} onChange={(e) => setNewType(e.target.value)} placeholder="Type" />
+                        <Select
+                            options={types.map(t => ({ value: t.name, label: t.name }))}
+                            defaultValue={newType}
+                            placeholder="Select a type"
+                            onChange={(v) => setNewType(typeof v === 'number' ? String(v) : v)}
+                        />
                     </div>
                     <div>
                         <Label>Hours</Label>

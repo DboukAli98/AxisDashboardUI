@@ -21,6 +21,7 @@ import {
     TableHeader,
     TableRow,
 } from "../../components/ui/table";
+import { CategoryTypes } from "../../utils/common-data/commonData";
 
 export default function CategoryManagement() {
     const [categories, setCategories] = useState<CategoryDto[]>([]);
@@ -196,7 +197,7 @@ export default function CategoryManagement() {
                 <div className="flex flex-col gap-3">
                     <Input placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                     <label className="text-sm text-gray-600">Type</label>
-                    <Select options={[{ value: 'item', label: 'item' }, { value: 'game', label: 'game' }]} defaultValue={form.type} onChange={(v: string | number) => setForm((f) => ({ ...f, type: String(v) }))} />
+                    <Select options={CategoryTypes} defaultValue={form.type} onChange={(v: string | number) => setForm((f) => ({ ...f, type: String(v) }))} />
                 </div>
             </Modal>
 
