@@ -180,8 +180,6 @@ export default function Items() {
         }
     }
 
-    const transparentGif = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-
     function resolveImageUrl(path?: string | null) {
         if (!path) return '';
         try {
@@ -246,16 +244,12 @@ export default function Items() {
                                 {items.map((it) => (
                                     <TableRow key={it.id}>
                                         <TableCell className="px-4 py-3 text-start">
-                                            {it.imagePath ? (
-                                                <img
-                                                    src={resolveImageUrl(it.imagePath)}
-                                                    alt={it.name}
-                                                    className="w-12 h-8 object-cover rounded"
-                                                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = transparentGif; }}
-                                                />
-                                            ) : (
-                                                <div className="w-12 h-8 bg-gray-100 rounded" />
-                                            )}
+                                            <img
+                                                src={it.imagePath ? resolveImageUrl(it.imagePath) : '/images/image-placeholder.svg'}
+                                                alt={it.name}
+                                                className="w-12 h-8 object-cover rounded"
+                                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }}
+                                            />
                                         </TableCell>
                                         <TableCell className="px-5 py-4 sm:px-6 text-start">
                                             <div className="font-medium text-gray-800 dark:text-white/90">{it.name}</div>

@@ -137,6 +137,18 @@ export default function CashierItems() {
     // total selected items count (used to show View Order button)
     const totalSelected = Object.values(selectedItems).reduce((s, v) => s + (v || 0), 0);
 
+    function resolveImageUrl(path?: string | null) {
+        if (!path) return '';
+        try {
+            const url = new URL(path);
+            return url.toString();
+        } catch {
+            const base = (import.meta.env.VITE_API_IMAGE_BASE_URL as string) || '';
+            if (base) return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+            return path;
+        }
+    }
+
     // build order lines from selectedItems and items list (coerce to numbers)
     const orderLines = Object.entries(selectedItems)
         .filter(([, q]) => Number(q) > 0)
@@ -146,7 +158,8 @@ export default function CashierItems() {
             const unit = item && item.price != null ? Number(item.price) : 0;
             const name = item ? item.name : itemId;
             const lineTotal = unit * qty;
-            return { itemId, name, qty, unit, lineTotal };
+            const image = item?.imagePath ? resolveImageUrl(item.imagePath) : '';
+            return { itemId, name, qty, unit, lineTotal, image };
         });
 
     const orderTotal = orderLines.reduce((s, l) => s + l.lineTotal, 0);
@@ -222,7 +235,15 @@ export default function CashierItems() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {items.map(it => (
                             <div key={it.id} className={`border rounded p-3 bg-white shadow-sm ${(selectedItems[it.id] || 0) > 0 ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
-                                <div className="font-medium text-gray-800 mb-1">{it.name}</div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <img
+                                        src={it.imagePath ? resolveImageUrl(it.imagePath) : '/images/image-placeholder.svg'}
+                                        alt={it.name}
+                                        className="w-16 h-12 object-cover rounded"
+                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }}
+                                    />
+                                    <div className="font-medium text-gray-800">{it.name}</div>
+                                </div>
                                 <div className="text-sm text-gray-500">Category: {categories.find(c => c.id === it.categoryId)?.name ?? '-'}</div>
                                 <div className="text-sm text-gray-500">Price: ${it.price}</div>
                                 <div className="text-sm text-gray-500">Stock: {it.quantity}</div>
@@ -287,9 +308,12 @@ export default function CashierItems() {
                                                 {orderLines.length === 0 && <div className="text-sm text-gray-500">No items</div>}
                                                 {orderLines.map((l) => (
                                                     <div key={l.itemId} className="flex items-center justify-between text-sm">
-                                                        <div className="flex-1">
-                                                            <div className="font-medium">{l.name}</div>
-                                                            <div className="text-xs text-gray-500">{l.qty} × ${l.unit.toFixed(2)}</div>
+                                                        <div className="flex items-center gap-3 flex-1">
+                                                            <img src={l.image || '/images/image-placeholder.svg'} alt={l.name} className="w-10 h-8 object-cover rounded" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }} />
+                                                            <div>
+                                                                <div className="font-medium">{l.name}</div>
+                                                                <div className="text-xs text-gray-500">{l.qty} × ${l.unit.toFixed(2)}</div>
+                                                            </div>
                                                         </div>
                                                         <div className="ml-2 w-24 text-right font-medium">${l.lineTotal.toFixed(2)}</div>
                                                     </div>
