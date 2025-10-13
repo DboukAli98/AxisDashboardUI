@@ -24,12 +24,14 @@ export default function GameCashierRooms() {
                 if (!mounted) return;
                 setRooms(res.data || []);
                 setTotalCount(res.totalCount ?? null);
-                // Load availability for all rooms
-                const availabilityPromises = (res.data || []).map(room =>
-                    getSetAvailability(Number(room.id), 1)
-                        .then(availability => ({ roomId: room.id, availableCount: availability.availableCount }))
-                        .catch(() => ({ roomId: room.id, availableCount: 0 }))
-                );
+                // Load availability for all rooms (skip open set rooms)
+                const availabilityPromises = (res.data || [])
+                    .filter(room => !room.isOpenSet)
+                    .map(room =>
+                        getSetAvailability(Number(room.id), 1)
+                            .then(availability => ({ roomId: room.id, availableCount: availability.availableCount }))
+                            .catch(() => ({ roomId: room.id, availableCount: 0 }))
+                    );
                 return Promise.all(availabilityPromises);
             })
             .then(availabilities => {
@@ -47,6 +49,11 @@ export default function GameCashierRooms() {
 
     useEffect(() => {
         if (!selectedRoom) {
+            setSetAvailability(null);
+            return;
+        }
+        if (selectedRoom.isOpenSet) {
+            // Skip loading sets for open set rooms
             setSetAvailability(null);
             return;
         }
@@ -92,7 +99,13 @@ export default function GameCashierRooms() {
                                             {(!isPc && isPlay) && <PlayStationIcon className="w-5 h-5 text-gray-600" />}
                                         </div>
                                     </div>
-                                    <div className="mt-3 text-sm text-gray-600">Available Sets: <span className="font-semibold text-green-600">{availableCount}</span></div>
+                                    <div className="mt-3 text-sm text-gray-600">
+                                        {r.isOpenSet ? (
+                                            <span className="font-semibold text-green-600">Open Set</span>
+                                        ) : (
+                                            <>Available Sets: <span className="font-semibold text-green-600">{availableCount}</span></>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}
@@ -113,8 +126,13 @@ export default function GameCashierRooms() {
             <Modal isOpen={!!selectedRoom} onClose={() => setSelectedRoom(null)} title={selectedRoom ? selectedRoom.name : 'Room'}>
                 <div className="space-y-4">
                     <div className="text-sm text-gray-600">Category: {selectedRoom?.categoryName ?? selectedRoom?.categoryId}</div>
-                    {loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
-                    {!loadingAvailability && setAvailability && (
+                    {selectedRoom?.isOpenSet && (
+                        <div className="text-sm text-green-600 bg-green-50 p-3 rounded">
+                            This is an open set room — no set management required.
+                        </div>
+                    )}
+                    {!selectedRoom?.isOpenSet && loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
+                    {!selectedRoom?.isOpenSet && !loadingAvailability && setAvailability && (
                         <>
                             <div className="text-sm font-medium text-gray-700">Sets Availability:</div>
                             <div className="flex gap-4 text-xs mb-2">

@@ -86,6 +86,16 @@ const GameSession: React.FC = () => {
             setSelectedSetId(null);
             return;
         }
+        const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
+        console.log('useEffect - Selected room:', selectedRoom);
+        if (selectedRoom?.isOpenSet) {
+            // Skip loading sets for open set rooms - auto-enable submit
+            console.log('Room is open set, skipping set loading');
+            setSetAvailability(null);
+            setSelectedSetId(null);
+            setLoadingAvailability(false);
+            return;
+        }
         let mounted = true;
         setLoadingAvailability(true);
         const roomIdNum = Number(selectedRoomId);
@@ -97,7 +107,7 @@ const GameSession: React.FC = () => {
             .catch(() => { /* ignore */ })
             .finally(() => { if (mounted) setLoadingAvailability(false); });
         return () => { mounted = false; };
-    }, [selectedRoomId, startModalOpen]);
+    }, [selectedRoomId, startModalOpen, rooms]);
 
     const settingsByGame = useMemo(() => {
         const map = new Map<string, GameSettingDto[]>();
@@ -157,12 +167,19 @@ const GameSession: React.FC = () => {
                                             <div key={s.id} className="flex items-center justify-between p-2 rounded bg-gray-50">
                                                 <div>
                                                     <div className="text-sm font-medium">{s.name}</div>
-                                                    <div className="text-xs text-gray-500">{s.hours ? `${s.hours} hrs` : ''}{s.hours && s.price ? ' • ' : ''}{s.price ? `$${s.price}` : ''}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {s.hours === 0 ? 'Open Hour' : (s.hours ? `${s.hours} hrs` : '')}
+                                                        {((s.hours === 0 || s.hours) && s.price) ? ' • ' : ''}
+                                                        {s.price ? `$${s.price}` : ''}
+                                                    </div>
                                                 </div>
                                                 <div className="text-right">
                                                     <button className="px-2 py-1 bg-blue-600 text-white text-xs rounded" onClick={() => {
                                                         setSelectedSetting(s);
                                                         setStartHours(s.hours ?? 1);
+                                                        setSelectedRoomId(null);
+                                                        setSelectedSetId(null);
+                                                        setSetAvailability(null);
                                                         setStartModalOpen(true);
                                                     }}>Start</button>
                                                 </div>
@@ -196,17 +213,37 @@ const GameSession: React.FC = () => {
                     <div>
                         <Label>Room</Label>
                         <Select
+                            key={startModalOpen ? 'room-select-open' : 'room-select-closed'}
                             options={[...rooms.map(r => ({ value: r.id, label: r.name }))]}
                             defaultValue={selectedRoomId ?? ''}
                             isPlaceHolderDisabled={false}
                             placeholder='Select a room'
-                            onChange={(v) => setSelectedRoomId(v === '' ? null : String(v))}
+                            onChange={(v) => {
+                                const roomId = v === '' ? null : String(v);
+                                console.log('Selected room ID:', roomId);
+                                console.log('Available rooms:', rooms.map(r => ({ id: r.id, name: r.name, isOpenSet: r.isOpenSet })));
+                                setSelectedRoomId(roomId);
+                            }}
                         />
                     </div>
 
-                    {selectedRoomId && loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
+                    {selectedRoomId && (() => {
+                        const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
+                        console.log('Selected room ID:', selectedRoomId);
+                        console.log('Found room:', selectedRoom);
+                        if (selectedRoom?.isOpenSet) {
+                            return (
+                                <div className="text-sm text-green-600 bg-green-50 p-3 rounded">
+                                    This is an open set room — no set selection required.
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
 
-                    {selectedRoomId && !loadingAvailability && setAvailability && (
+                    {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
+
+                    {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && !loadingAvailability && setAvailability && (
                         <div>
                             <Label>Select Set</Label>
                             <div className="flex gap-3 text-xs mb-2">
@@ -246,21 +283,34 @@ const GameSession: React.FC = () => {
 
                     <div>
                         <Label>Hours</Label>
-                        <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={!!selectedSetting?.isOffer} />
+                        <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={!!selectedSetting?.isOffer || selectedSetting?.hours === 0} />
                         {selectedSetting?.isOffer && (
                             <div className="text-xs text-gray-500 mt-1">This setting is an offer — duration is fixed.</div>
+                        )}
+                        {selectedSetting?.hours === 0 && (
+                            <div className="text-xs text-gray-500 mt-1">This is an open hour setting — duration is not applicable.</div>
                         )}
                     </div>
                     <div>
                         <Label>Total</Label>
-                        <div className="text-lg font-semibold">${(selectedSetting?.price ?? 0) * startHours}</div>
+                        <div className="text-lg font-semibold">${selectedSetting?.hours === 0 ? (selectedSetting?.price ?? 0) : ((selectedSetting?.price ?? 0) * startHours)}</div>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
                             className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!selectedSetId}
+                            disabled={(() => {
+                                if (!selectedRoomId) return true;
+                                const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
+                                console.log('Submit button - Selected room:', selectedRoom);
+                                if (selectedRoom?.isOpenSet) return false; // Enable immediately for open set rooms
+                                return !selectedSetId; // Require set selection for non-open-set rooms
+                            })()}
                             onClick={async () => {
-                                if (!selectedSetting || !selectedSetId) return;
+                                if (!selectedSetting || !selectedRoomId) return;
+                                const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
+                                const isOpenSetRoom = selectedRoom?.isOpenSet;
+                                if (!isOpenSetRoom && !selectedSetId) return;
+
                                 setStarting(true);
                                 try {
                                     await createGameSession({
@@ -268,7 +318,7 @@ const GameSession: React.FC = () => {
                                         gameSettingId: selectedSetting.id,
                                         hours: startHours,
                                         status: String(STATUS_ENABLED),
-                                        setId: selectedSetId,
+                                        setId: isOpenSetRoom ? undefined : selectedSetId!,
                                     });
                                     setToast({ variant: 'success', title: 'Session started', message: `Session created` });
                                     setStartModalOpen(false);

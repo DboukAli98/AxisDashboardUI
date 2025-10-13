@@ -26,6 +26,7 @@ export default function GameSettings() {
     const [newGameId, setNewGameId] = useState('');
     const [newHours, setNewHours] = useState<number | ''>('');
     const [newPrice, setNewPrice] = useState<number | ''>('');
+    const [isOpenHour, setIsOpenHour] = useState(false);
     const [creating, setCreating] = useState(false);
 
     // edit/delete state
@@ -75,6 +76,7 @@ export default function GameSettings() {
         setNewGameId(games[0]?.id || '');
         setNewHours('');
         setNewPrice('');
+        setIsOpenHour(false);
         setIsOpen(true);
     };
 
@@ -86,7 +88,7 @@ export default function GameSettings() {
                 type: newType,
                 isOffer: newIsOffer,
                 gameId: newGameId,
-                hours: newHours === '' ? undefined : newHours,
+                hours: isOpenHour ? 0 : (newHours === '' ? undefined : newHours),
                 price: newPrice === '' ? undefined : newPrice,
             };
             if (editingId) {
@@ -162,7 +164,7 @@ export default function GameSettings() {
                                         <td className="px-4 py-2 align-top">{s.type}</td>
                                         <td className="px-4 py-2 align-top">{s.isOffer ? 'Yes' : 'No'}</td>
                                         <td className="px-4 py-2 align-top">{s.gameName ?? (games.find(g => g.id === s.gameId)?.name ?? s.gameId)}</td>
-                                        <td className="px-4 py-2 align-top">{typeof s.hours === 'number' ? s.hours : '-'}</td>
+                                        <td className="px-4 py-2 align-top">{typeof s.hours === 'number' ? (s.hours === 0 ? 'Open' : s.hours) : '-'}</td>
                                         <td className="px-4 py-2 align-top">{typeof s.price === 'number' ? s.price : '-'}</td>
                                         <td className="px-4 py-2 align-top">{s.createdOn ? new Date(s.createdOn).toLocaleString() : '-'}</td>
                                         <td className="px-4 py-2 align-top">{s.modifiedOn ? new Date(s.modifiedOn).toLocaleString() : '-'}</td>
@@ -175,7 +177,9 @@ export default function GameSettings() {
                                                     setNewType(s.type);
                                                     setNewIsOffer(!!s.isOffer);
                                                     setNewGameId(s.gameId);
-                                                    setNewHours(typeof s.hours === 'number' ? s.hours : '');
+                                                    const hoursValue = typeof s.hours === 'number' ? s.hours : '';
+                                                    setIsOpenHour(hoursValue === 0);
+                                                    setNewHours(hoursValue === 0 ? '' : hoursValue);
                                                     setNewPrice(typeof s.price === 'number' ? s.price : '');
                                                     setIsOpen(true);
                                                 }}>Edit</button>
@@ -232,8 +236,25 @@ export default function GameSettings() {
                         </div>
                     </div>
                     <div>
+                        <Label>Open Hour</Label>
+                        <div className="flex items-center gap-2">
+                            <Switch key={String(isOpenHour)} label="Is this open hour?" defaultChecked={isOpenHour} onChange={(checked) => {
+                                setIsOpenHour(checked);
+                                if (checked) {
+                                    setNewHours('');
+                                }
+                            }} />
+                        </div>
+                    </div>
+                    <div>
                         <Label>Hours</Label>
-                        <Input type="number" value={newHours === '' ? '' : String(newHours)} onChange={(e) => setNewHours(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Hours" />
+                        <Input
+                            type="number"
+                            value={newHours === '' ? '' : String(newHours)}
+                            onChange={(e) => setNewHours(e.target.value === '' ? '' : Number(e.target.value))}
+                            placeholder="Hours"
+                            disabled={isOpenHour}
+                        />
                     </div>
                     <div>
                         <Label>Price</Label>

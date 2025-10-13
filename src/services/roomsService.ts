@@ -6,6 +6,7 @@ export type RoomDto = {
   categoryId: number;
   categoryName?: string;
   sets: number;
+  isOpenSet?: boolean;
   createdOn?: string | null;
   modifiedOn?: string | null;
 };
@@ -35,7 +36,8 @@ export async function getRoomById(id: string): Promise<RoomDto> {
 export type CreateRoomRequest = {
   name: string;
   categoryId: number;
-  sets: number;
+  setCount: number;
+  isOpenSet: boolean;
 };
 
 export async function createRoom(body: CreateRoomRequest): Promise<RoomDto> {

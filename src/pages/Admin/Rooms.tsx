@@ -3,6 +3,7 @@ import Modal from '../../components/ui/Modal';
 import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
+import Switch from '../../components/form/switch/Switch';
 import DeleteIconButton from '../../components/ui/DeleteIconButton';
 import { PlayStationIcon, PcIcon } from '../../icons';
 import { getRooms, RoomDto, CreateRoomRequest, createRoom, updateRoom, deleteRoom } from '../../services/roomsService';
@@ -21,6 +22,7 @@ export default function Rooms() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [name, setName] = useState('');
     const [categoryId, setCategoryId] = useState<number | null>(null);
+    const [isOpenSet, setIsOpenSet] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -67,6 +69,7 @@ export default function Rooms() {
         setEditingId(null);
         setName('');
         setCategoryId(categories[0]?.id ?? null);
+        setIsOpenSet(false);
         setIsOpen(true);
     };
 
@@ -150,7 +153,7 @@ export default function Rooms() {
                 setSubmitting(false);
                 return;
             }
-            const body: CreateRoomRequest = { name, categoryId, sets: 0 }; // Default to 0, managed via set management
+            const body: CreateRoomRequest = { name, categoryId, setCount: 0, isOpenSet }; // setCount defaults to 0, managed via set management
             if (editingId) {
                 await updateRoom(editingId, body);
             } else {
@@ -215,13 +218,20 @@ export default function Rooms() {
                                         </div>
                                     </div>
                                     <div className="mt-4 flex items-center justify-between">
-                                        <div className="text-sm text-gray-600">Sets: <span className="font-semibold">{r.sets}</span></div>
+                                        <div className="text-sm text-gray-600">
+                                            {r.isOpenSet ? (
+                                                <span className="text-green-600 font-semibold">Open Set</span>
+                                            ) : (
+                                                <>Sets: <span className="font-semibold">{r.sets}</span></>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-2">
-                                            <button className="text-xs px-2 py-1 bg-blue-500 text-white rounded" onClick={() => openSetsManagement(r.id, r.name)}>Manage Sets</button>
+                                            {!r.isOpenSet && <button className="text-xs px-2 py-1 bg-blue-500 text-white rounded" onClick={() => openSetsManagement(r.id, r.name)}>Manage Sets</button>}
                                             <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => {
                                                 setEditingId(r.id);
                                                 setName(r.name);
                                                 setCategoryId(r.categoryId);
+                                                setIsOpenSet(!!r.isOpenSet);
                                                 setIsOpen(true);
                                             }}>Edit</button>
                                             <DeleteIconButton onClick={() => setDeleteId(r.id)} />
@@ -264,6 +274,15 @@ export default function Rooms() {
                     <div>
                         <Label>Category</Label>
                         <Select options={categories.map(c => ({ value: c.id, label: c.name }))} defaultValue={categoryId ?? ""} onChange={(v) => setCategoryId(v === '' ? null : (typeof v === 'number' ? v : Number(v)))} />
+                    </div>
+                    <div>
+                        <Label>Open Set</Label>
+                        <div className="flex items-center gap-2">
+                            <Switch key={String(isOpenSet)} label="Is this an open set room?" defaultChecked={isOpenSet} onChange={(checked) => setIsOpenSet(checked)} />
+                        </div>
+                        {isOpenSet && (
+                            <div className="text-xs text-gray-500 mt-1">Open set rooms do not require set selection.</div>
+                        )}
                     </div>
                     {/* Sets field removed - manage sets via "Manage Sets" button on room cards */}
                     {/* actions moved to Modal footer */}
