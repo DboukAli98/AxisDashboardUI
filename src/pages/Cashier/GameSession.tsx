@@ -196,8 +196,10 @@ const GameSession: React.FC = () => {
                     <div>
                         <Label>Room</Label>
                         <Select
-                            options={[{ value: '', label: 'Select a room' }, ...rooms.map(r => ({ value: r.id, label: r.name }))]}
+                            options={[...rooms.map(r => ({ value: r.id, label: r.name }))]}
                             defaultValue={selectedRoomId ?? ''}
+                            isPlaceHolderDisabled={false}
+                            placeholder='Select a room'
                             onChange={(v) => setSelectedRoomId(v === '' ? null : String(v))}
                         />
                     </div>

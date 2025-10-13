@@ -11,11 +11,13 @@ interface SelectProps {
   onChange: (value: string | number) => void;
   className?: string;
   defaultValue?: string | number;
+  isPlaceHolderDisabled?: boolean;
 }
 
 const Select: React.FC<SelectProps> = ({
   options,
   placeholder = "Select an option",
+  isPlaceHolderDisabled = true,
   onChange,
   className = "",
   defaultValue = "",
@@ -44,7 +46,7 @@ const Select: React.FC<SelectProps> = ({
         {/* Placeholder option */}
         <option
           value=""
-          disabled
+          disabled={isPlaceHolderDisabled}
           className="text-gray-700 dark:bg-gray-900 dark:text-gray-400"
         >
           {placeholder}

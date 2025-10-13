@@ -14,6 +14,7 @@ export default function GameCashierRooms() {
     const [selectedRoom, setSelectedRoom] = useState<RoomDto | null>(null);
     const [setAvailability, setSetAvailability] = useState<SetAvailabilityDto | null>(null);
     const [loadingAvailability, setLoadingAvailability] = useState(false);
+    const [roomAvailability, setRoomAvailability] = useState<Record<string, number>>({});
 
     useEffect(() => {
         let mounted = true;
@@ -23,6 +24,21 @@ export default function GameCashierRooms() {
                 if (!mounted) return;
                 setRooms(res.data || []);
                 setTotalCount(res.totalCount ?? null);
+                // Load availability for all rooms
+                const availabilityPromises = (res.data || []).map(room =>
+                    getSetAvailability(Number(room.id), 1)
+                        .then(availability => ({ roomId: room.id, availableCount: availability.availableCount }))
+                        .catch(() => ({ roomId: room.id, availableCount: 0 }))
+                );
+                return Promise.all(availabilityPromises);
+            })
+            .then(availabilities => {
+                if (!mounted || !availabilities) return;
+                const availabilityMap: Record<string, number> = {};
+                availabilities.forEach(({ roomId, availableCount }) => {
+                    availabilityMap[roomId] = availableCount;
+                });
+                setRoomAvailability(availabilityMap);
             })
             .catch(() => { /* ignore */ })
             .finally(() => { if (mounted) setLoading(false); });
@@ -63,6 +79,7 @@ export default function GameCashierRooms() {
                             const lower = catName.toLowerCase();
                             const isPc = lower.includes('pc');
                             const isPlay = lower.includes('play') || lower.includes('playstation');
+                            const availableCount = roomAvailability[r.id] ?? 0;
                             return (
                                 <div key={r.id} className="bg-white rounded-lg shadow-sm p-3 hover:shadow-md transition flex flex-col justify-between cursor-pointer" onClick={() => setSelectedRoom(r)}>
                                     <div className="flex items-start justify-between">
@@ -75,7 +92,7 @@ export default function GameCashierRooms() {
                                             {(!isPc && isPlay) && <PlayStationIcon className="w-5 h-5 text-gray-600" />}
                                         </div>
                                     </div>
-                                    <div className="mt-3 text-sm text-gray-600">Sets: <span className="font-semibold">{r.sets}</span></div>
+                                    <div className="mt-3 text-sm text-gray-600">Available Sets: <span className="font-semibold text-green-600">{availableCount}</span></div>
                                 </div>
                             );
                         })}
