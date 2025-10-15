@@ -93,6 +93,7 @@ const AppSidebar: React.FC = () => {
           name: "Dashboard",
           subItems: [{ name: "Ecommerce", path: "/" }],
         },
+        { icon: <ListIcon />, name: "Menu", path: "/menu" },
         { icon: <UserCircleIcon />, name: "Users Management", path: "/admin/users" },
         {
           icon: <BoxCubeIcon />,
@@ -126,6 +127,7 @@ const AppSidebar: React.FC = () => {
     // GameCashie: limited menu for game cashier operations
     if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier")) {
       return [
+        { icon: <ListIcon />, name: "Menu", path: "/menu" },
         // use non-admin paths so the GameCashie role isn't blocked by AdminRoute
         { icon: <PlugInIcon />, name: "Game Session", path: "/game/sessions" },
 
@@ -136,6 +138,7 @@ const AppSidebar: React.FC = () => {
     // Cashier: show Items and Orders as separate top-level links
     if (hasRole("cashier")) {
       return [
+        { icon: <ListIcon />, name: "Menu", path: "/menu" },
         { icon: <BoxCubeIcon />, name: "Items", path: "/cashier/items" },
         { icon: <TableIcon />, name: "Orders", path: "/cashier/orders" },
       ];

@@ -35,6 +35,7 @@ import CategoryManagement from "./pages/Admin/CategoryManagement";
 import CashierItems from './pages/Cashier/Items';
 import CashierOrders from './pages/Cashier/Orders';
 import GameSession from "./pages/Cashier/GameSession";
+import Menu from "./pages/Menu";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -77,6 +78,9 @@ export default function App() {
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route index path="/" element={<Home />} />
+
+              {/* Public Pages */}
+              <Route path="/menu" element={<Menu />} />
 
               {/* Others Page */}
               <Route path="/profile" element={<UserProfiles />} />
