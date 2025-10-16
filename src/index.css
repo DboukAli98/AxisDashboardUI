@@ -776,3 +776,31 @@ span.flatpickr-weekday,
 .simplebar-scrollbar.simplebar-visible:before {
   @apply opacity-100;
 }
+
+/* Print styles for invoices */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  body {
+    background: white;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Hide all navigation, sidebars, headers during print */
+  header, nav, aside, .no-print {
+    display: none !important;
+  }
+
+  /* Ensure invoice takes full width */
+  .invoice-container {
+    width: 100%;
+    max-width: 100%;
+    box-shadow: none;
+  }
+}

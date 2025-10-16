@@ -11,11 +11,15 @@ import Alert from '../../components/ui/alert/Alert';
 import { createGameSession } from '../../services/gameSession';
 import { getRooms, RoomDto } from '../../services/roomsService';
 import { getSetAvailability, SetAvailabilityDto } from '../../services/setService';
+import { getGameTransactions, GameTransaction } from '../../services/transactionService';
+import { useAuth } from '../../context/AuthContext';
+import GameInvoice from '../../components/invoice/GameInvoice';
 // ...existing imports...
 
 const PAGE_SIZE = 8;
 
 const GameSession: React.FC = () => {
+    const { claims } = useAuth();
     const [games, setGames] = useState<GameDto[]>([]);
     const [settings, setSettings] = useState<GameSettingDto[]>([]);
     const [loading, setLoading] = useState(true);
@@ -33,7 +37,14 @@ const GameSession: React.FC = () => {
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
     const [setAvailability, setSetAvailability] = useState<SetAvailabilityDto | null>(null);
     const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
-    const [loadingAvailability, setLoadingAvailability] = useState(false); useEffect(() => {
+    const [loadingAvailability, setLoadingAvailability] = useState(false);
+
+    // Invoice states
+    const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+    const [currentInvoice, setCurrentInvoice] = useState<GameTransaction | null>(null);
+    const [userInvoices, setUserInvoices] = useState<GameTransaction[]>([]);
+    const [loadingInvoices, setLoadingInvoices] = useState(false);
+    const [showInvoicesSection, setShowInvoicesSection] = useState(false); useEffect(() => {
         let mounted = true;
         setLoading(true);
         setError(null);
@@ -118,6 +129,21 @@ const GameSession: React.FC = () => {
         });
         return map;
     }, [settings]);
+
+    // Load user's invoices
+    useEffect(() => {
+        if (!showInvoicesSection || !claims?.name) return;
+        let mounted = true;
+        setLoadingInvoices(true);
+        getGameTransactions({ CreatedBy: [claims.name], PageSize: 50 })
+            .then((res) => {
+                if (!mounted) return;
+                setUserInvoices(res.data || []);
+            })
+            .catch(() => { /* ignore */ })
+            .finally(() => { if (mounted) setLoadingInvoices(false); });
+        return () => { mounted = false; };
+    }, [showInvoicesSection, claims?.name]);
 
     return (
         <div className="p-6">
@@ -321,10 +347,30 @@ const GameSession: React.FC = () => {
                                         setId: isOpenSetRoom ? undefined : selectedSetId!,
                                         isOpenHour: selectedSetting.isOpenHour,
                                     });
-                                    setToast({ variant: 'success', title: 'Session started', message: `Session created` });
+
+                                    // Fetch the latest transaction for this user to show as invoice
+                                    if (claims?.name) {
+                                        const invoiceRes = await getGameTransactions({
+                                            CreatedBy: [claims.name],
+                                            PageSize: 1,
+                                            Page: 1
+                                        });
+                                        if (invoiceRes.data && invoiceRes.data.length > 0) {
+                                            setCurrentInvoice(invoiceRes.data[0]);
+                                            setInvoiceModalOpen(true);
+                                        }
+                                    }
+
+                                    setToast({ variant: 'success', title: 'Session started', message: `Session created successfully` });
                                     setStartModalOpen(false);
                                     setSelectedRoomId(null);
                                     setSelectedSetId(null);
+
+                                    // Refresh invoices list if it's visible
+                                    if (showInvoicesSection) {
+                                        setShowInvoicesSection(false);
+                                        setTimeout(() => setShowInvoicesSection(true), 100);
+                                    }
                                 } catch (e: unknown) {
                                     let message = 'Failed to start session';
                                     if (e && typeof e === 'object') {
@@ -344,6 +390,112 @@ const GameSession: React.FC = () => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Invoice Modal */}
+            <Modal
+                isOpen={invoiceModalOpen}
+                onClose={() => {
+                    setInvoiceModalOpen(false);
+                    setCurrentInvoice(null);
+                }}
+                title="Invoice"
+            >
+                <div className="max-h-[80vh] overflow-y-auto">
+                    {currentInvoice && <GameInvoice transaction={currentInvoice} />}
+                </div>
+            </Modal>
+
+            {/* Invoices Section */}
+            <div className="mt-8">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">My Invoices</h2>
+                    <button
+                        onClick={() => setShowInvoicesSection(!showInvoicesSection)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                    >
+                        {showInvoicesSection ? 'Hide Invoices' : 'Show Invoices'}
+                    </button>
+                </div>
+
+                {showInvoicesSection && (
+                    <div className="bg-white rounded-lg shadow p-6">
+                        {loadingInvoices && (
+                            <div className="flex justify-center py-10">
+                                <Loader />
+                            </div>
+                        )}
+
+                        {!loadingInvoices && userInvoices.length === 0 && (
+                            <div className="text-center py-10 text-gray-500">
+                                No invoices found
+                            </div>
+                        )}
+
+                        {!loadingInvoices && userInvoices.length > 0 && (
+                            <div className="space-y-4">
+                                {userInvoices.map((invoice) => (
+                                    <div
+                                        key={invoice.transactionId}
+                                        className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                                        onClick={() => {
+                                            setCurrentInvoice(invoice);
+                                            setInvoiceModalOpen(true);
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className="text-lg font-semibold text-gray-800">
+                                                        Invoice #{invoice.transactionId}
+                                                    </span>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === 1
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-gray-100 text-gray-800'
+                                                        }`}>
+                                                        {getStatusName(invoice.statusId) || 'Unknown'}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                                    <div>
+                                                        <p className="text-gray-500">Date</p>
+                                                        <p className="font-medium text-gray-800">
+                                                            {new Date(invoice.createdOn).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    {invoice.roomName && (
+                                                        <div>
+                                                            <p className="text-gray-500">Room</p>
+                                                            <p className="font-medium text-gray-800">{invoice.roomName}</p>
+                                                        </div>
+                                                    )}
+                                                    {invoice.gameName && (
+                                                        <div>
+                                                            <p className="text-gray-500">Game</p>
+                                                            <p className="font-medium text-gray-800">{invoice.gameName}</p>
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p className="text-gray-500">Duration</p>
+                                                        <p className="font-medium text-gray-800">
+                                                            {invoice.hours === 0 ? 'Open Hour' : `${invoice.hours}h`}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right ml-4">
+                                                <p className="text-sm text-gray-500">Total</p>
+                                                <p className="text-2xl font-bold text-gray-800">
+                                                    ${invoice.totalPrice.toFixed(2)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
