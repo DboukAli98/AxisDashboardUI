@@ -75,12 +75,12 @@ export default function App() {
         <ScrollToTop />
         <AuthProvider>
           <Routes>
+            {/* Public Menu Page - Standalone without layout */}
+            <Route path="/menu" element={<Menu />} />
+
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route index path="/" element={<Home />} />
-
-              {/* Public Pages */}
-              <Route path="/menu" element={<Menu />} />
 
               {/* Others Page */}
               <Route path="/profile" element={<UserProfiles />} />
