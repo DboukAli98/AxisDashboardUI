@@ -777,15 +777,17 @@ span.flatpickr-weekday,
   @apply opacity-100;
 }
 
-/* Print styles for invoices */
+/* Print styles for POS-style receipts */
 @media print {
   @page {
-    size: A4;
-    margin: 15mm;
+    size: 80mm auto; /* Thermal receipt printer width */
+    margin: 0;
   }
 
   body {
     background: white;
+    margin: 0;
+    padding: 0;
   }
 
   .print\:hidden {
@@ -797,10 +799,17 @@ span.flatpickr-weekday,
     display: none !important;
   }
 
-  /* Ensure invoice takes full width */
+  /* Ensure receipt takes full width */
   .invoice-container {
     width: 100%;
     max-width: 100%;
     box-shadow: none;
+    margin: 0;
+    padding: 10mm;
+  }
+
+  /* Force monospace font for receipt look */
+  body, * {
+    font-family: 'Courier New', monospace !important;
   }
 }

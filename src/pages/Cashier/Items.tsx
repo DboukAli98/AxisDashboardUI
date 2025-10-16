@@ -7,7 +7,7 @@ import {
     ItemDto,
     ItemListResponse,
 } from "../../services/itemService";
-import { createCoffeeShopOrder, OrderItemRequest, getTransactions, TransactionItem } from '../../services/transactionService';
+import { createCoffeeShopOrder, OrderItemRequest, getItemTransactions, ItemTransaction } from '../../services/transactionService';
 import { useAuth } from '../../context/AuthContext';
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
@@ -15,8 +15,9 @@ import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import StatusToggle from '../../components/ui/StatusToggle';
-import { STATUS_ENABLED } from '../../services/statuses';
+import { STATUS_ENABLED, getStatusName, STATUS_PROCESSED_PAID } from '../../services/statuses';
 import Select from "../../components/form/Select";
+import ItemInvoice from "../../components/invoice/ItemInvoice";
 
 export default function CashierItems() {
     const [items, setItems] = useState<ItemDto[]>([]);
@@ -50,12 +51,13 @@ export default function CashierItems() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [orderSubmitting, setOrderSubmitting] = useState(false);
     const [orderTimestamp, setOrderTimestamp] = useState<Date | null>(null);
-    // orders (transactions) for the current user
-    const [ordersLoading, setOrdersLoading] = useState(false);
-    const [ordersPage, setOrdersPage] = useState(1);
-    const [ordersPageSize] = useState(5);
-    const [ordersTotal, setOrdersTotal] = useState(0);
-    const [orders, setOrders] = useState<TransactionItem[]>([]);
+
+    // Invoice states
+    const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+    const [currentInvoice, setCurrentInvoice] = useState<ItemTransaction | null>(null);
+    const [userInvoices, setUserInvoices] = useState<ItemTransaction[]>([]);
+    const [loadingInvoices, setLoadingInvoices] = useState(false);
+    const [showInvoicesSection, setShowInvoicesSection] = useState(false);
 
     const auth = useAuth();
 
@@ -94,26 +96,6 @@ export default function CashierItems() {
         };
     }, [page, pageSize, selectedCategory, debouncedSearch, itemsReloadToken]);
 
-    // fetch orders created by current user
-    useEffect(() => {
-        let mounted = true;
-        const name = auth?.claims?.name ?? null;
-        if (!name) return;
-        setOrdersLoading(true);
-        getTransactions({ page: ordersPage, pageSize: ordersPageSize, createdBy: name })
-            .then((res) => {
-                if (!mounted) return;
-                setOrders(res.data || []);
-                setOrdersTotal(res.totalCount || 0);
-            })
-            .catch(() => {
-                /* ignore */
-            })
-            .finally(() => { if (mounted) setOrdersLoading(false); });
-
-        return () => { mounted = false; };
-    }, [auth?.claims?.name, ordersPage, ordersPageSize]);
-
     // Debounce search input (300ms)
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -133,6 +115,21 @@ export default function CashierItems() {
             });
         return () => { mounted = false; };
     }, []);
+
+    // Load user's item invoices
+    useEffect(() => {
+        if (!showInvoicesSection || !auth?.claims?.name) return;
+        let mounted = true;
+        setLoadingInvoices(true);
+        getItemTransactions({ CreatedBy: [auth.claims.name], PageSize: 50 })
+            .then((res) => {
+                if (!mounted) return;
+                setUserInvoices(res.data || []);
+            })
+            .catch(() => { /* ignore */ })
+            .finally(() => { if (mounted) setLoadingInvoices(false); });
+        return () => { mounted = false; };
+    }, [showInvoicesSection, auth?.claims?.name]);
 
     // total selected items count (used to show View Order button)
     const totalSelected = Object.values(selectedItems).reduce((s, v) => s + (v || 0), 0);
@@ -337,11 +334,31 @@ export default function CashierItems() {
                                                     setOrderSubmitting(true);
                                                     try {
                                                         await createCoffeeShopOrder(orderItems as OrderItemRequest[]);
+
+                                                        // Fetch the latest transaction for this user to show as invoice
+                                                        if (auth?.claims?.name) {
+                                                            const invoiceRes = await getItemTransactions({
+                                                                CreatedBy: [auth.claims.name],
+                                                                PageSize: 1,
+                                                                Page: 1
+                                                            });
+                                                            if (invoiceRes.data && invoiceRes.data.length > 0) {
+                                                                setCurrentInvoice(invoiceRes.data[0]);
+                                                                setInvoiceModalOpen(true);
+                                                            }
+                                                        }
+
                                                         setSelectedItems({});
                                                         setIsDrawerOpen(false);
                                                         // refresh items list to reflect updated stock
                                                         setItemsReloadToken(t => t + 1);
                                                         setNotification({ variant: 'success', title: 'Order Created', message: 'Order submitted successfully' });
+
+                                                        // Refresh invoices list if it's visible
+                                                        if (showInvoicesSection) {
+                                                            setShowInvoicesSection(false);
+                                                            setTimeout(() => setShowInvoicesSection(true), 100);
+                                                        }
                                                     } catch (err) {
                                                         let message = 'Failed to create order';
                                                         if (err && typeof err === 'object') {
@@ -362,35 +379,108 @@ export default function CashierItems() {
                             </div>
                         </div>
                     </div>
-                    {/* My Orders (created by current user) */}
+
+                    {/* Invoices Section */}
                     <div className="mt-8">
-                        <h2 className="text-lg font-medium mb-3">My Orders</h2>
-                        {ordersLoading && <div className="text-sm text-gray-600">Loading orders...</div>}
-                        {!ordersLoading && orders.length === 0 && <div className="text-sm text-gray-500">No orders yet.</div>}
-                        {!ordersLoading && orders.length > 0 && (
-                            <div className="space-y-2">
-                                {orders.map((o: TransactionItem) => (
-                                    <div key={o.id} className="p-3 border rounded bg-white">
-                                        <div className="flex items-center justify-between">
-                                            <div className="font-medium">{o.room ?? o.game ?? 'Order'}</div>
-                                            <div className="text-sm text-gray-600">{new Date(o.createdOn).toLocaleString()}</div>
-                                        </div>
-                                        <div className="text-sm text-gray-500 mt-1">Total: ${o.totalPrice?.toFixed ? o.totalPrice.toFixed(2) : o.totalPrice}</div>
-                                        <div className="text-sm text-gray-500 mt-1">Status: {o.statusId}</div>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-semibold">My Invoices</h2>
+                            <button
+                                onClick={() => setShowInvoicesSection(!showInvoicesSection)}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
+                            >
+                                {showInvoicesSection ? 'Hide Invoices' : 'Show Invoices'}
+                            </button>
+                        </div>
+
+                        {showInvoicesSection && (
+                            <div className="bg-white rounded-lg shadow p-6">
+                                {loadingInvoices && (
+                                    <div className="flex justify-center py-10">
+                                        <Loader />
                                     </div>
-                                ))}
-                                <div className="mt-2 flex items-center justify-between">
-                                    <div className="text-sm text-gray-600">Page {ordersPage}</div>
-                                    <div className="space-x-2">
-                                        <button className="px-2 py-1 bg-gray-200 rounded" disabled={ordersPage <= 1} onClick={() => setOrdersPage(p => Math.max(1, p - 1))}>Prev</button>
-                                        <button className="px-2 py-1 bg-gray-200 rounded" disabled={ordersPage >= Math.max(1, Math.ceil(ordersTotal / ordersPageSize))} onClick={() => setOrdersPage(p => p + 1)}>Next</button>
+                                )}
+
+                                {!loadingInvoices && userInvoices.length === 0 && (
+                                    <div className="text-center py-10 text-gray-500">
+                                        No invoices found
                                     </div>
-                                </div>
+                                )}
+
+                                {!loadingInvoices && userInvoices.length > 0 && (
+                                    <div className="space-y-4">
+                                        {userInvoices.map((invoice) => (
+                                            <div
+                                                key={invoice.transactionId}
+                                                className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                                                onClick={() => {
+                                                    setCurrentInvoice(invoice);
+                                                    setInvoiceModalOpen(true);
+                                                }}
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <span className="text-lg font-semibold text-gray-800">
+                                                                Invoice #{invoice.transactionId}
+                                                            </span>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : 'bg-gray-100 text-gray-800'
+                                                                }`}>
+                                                                {getStatusName(invoice.statusId) || 'Unknown'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                                            <div>
+                                                                <p className="text-gray-500">Date</p>
+                                                                <p className="font-medium text-gray-800">
+                                                                    {new Date(invoice.createdOn).toLocaleDateString()}
+                                                                </p>
+                                                            </div>
+                                                            {invoice.roomName && (
+                                                                <div>
+                                                                    <p className="text-gray-500">Room</p>
+                                                                    <p className="font-medium text-gray-800">{invoice.roomName}</p>
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <p className="text-gray-500">Items</p>
+                                                                <p className="font-medium text-gray-800">
+                                                                    {invoice.items?.length || 0} item{(invoice.items?.length || 0) !== 1 ? 's' : ''}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right ml-4">
+                                                        <p className="text-sm text-gray-500">Total</p>
+                                                        <p className="text-2xl font-bold text-gray-800">
+                                                            ${invoice.totalPrice.toFixed(2)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
                 </div>
             )}
+
+            {/* Invoice Modal */}
+            <Modal
+                isOpen={invoiceModalOpen}
+                onClose={() => {
+                    setInvoiceModalOpen(false);
+                    setCurrentInvoice(null);
+                }}
+                title="Invoice"
+            >
+                <div className="max-h-[80vh] overflow-y-auto">
+                    {currentInvoice && <ItemInvoice transaction={currentInvoice} />}
+                </div>
+            </Modal>
 
             <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Item" : "Create Item"}>
                 <div className="flex flex-col gap-3">

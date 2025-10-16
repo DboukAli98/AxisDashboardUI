@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { getGames, GameDto } from '../../services/gameService';
 import { getSettings, GameSettingDto } from '../../services/gameSettingsService';
-import { getStatusName, STATUS_DISABLED, STATUS_ENABLED } from '../../services/statuses';
+import { getStatusName, STATUS_DISABLED, STATUS_ENABLED, STATUS_PROCESSED_PAID } from '../../services/statuses';
 import Loader from '../../components/ui/Loader';
 import Modal from '../../components/ui/Modal';
 import Label from '../../components/form/Label';
@@ -174,7 +174,7 @@ const GameSession: React.FC = () => {
                                             // coerce to number for reliable comparisons (API may return strings)
                                             const statusIdNum = g.statusId === null || g.statusId === undefined ? null : Number(g.statusId);
                                             const name = getStatusName(statusIdNum) ?? (g.statusId ?? '-');
-                                            if (statusIdNum === STATUS_ENABLED) {
+                                            if (statusIdNum === STATUS_ENABLED || statusIdNum === STATUS_PROCESSED_PAID) {
                                                 return <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">{name}</span>;
                                             }
                                             if (statusIdNum === STATUS_DISABLED) {
@@ -448,7 +448,7 @@ const GameSession: React.FC = () => {
                                                     <span className="text-lg font-semibold text-gray-800">
                                                         Invoice #{invoice.transactionId}
                                                     </span>
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === 1
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-gray-100 text-gray-800'
                                                         }`}>

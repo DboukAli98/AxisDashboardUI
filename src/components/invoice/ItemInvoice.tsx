@@ -1,13 +1,13 @@
 import React from 'react';
-import { GameTransaction } from '../../services/transactionService';
+import { ItemTransaction } from '../../services/transactionService';
 import { getStatusName } from '../../services/statuses';
 
-interface GameInvoiceProps {
-    transaction: GameTransaction;
+interface ItemInvoiceProps {
+    transaction: ItemTransaction;
     onPrint?: () => void;
 }
 
-const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
+const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
     const handlePrint = () => {
         if (onPrint) onPrint();
         window.print();
@@ -25,13 +25,13 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
         <div className="bg-white p-6 max-w-sm mx-auto font-mono text-sm">
             {/* Header */}
             <div className="text-center border-b-2 border-dashed border-gray-800 pb-4 mb-4">
-                <div className="text-xl font-bold mb-1">GAME SESSION</div>
-                <div className="text-xs">RECEIPT</div>
+                <div className="text-xl font-bold mb-1">ORDER RECEIPT</div>
+                <div className="text-xs">COFFEE SHOP</div>
                 <div className="text-xs mt-2">{formattedDate}</div>
                 <div className="text-xs">Invoice #{transaction.transactionId}</div>
             </div>
 
-            {/* Session Details */}
+            {/* Order Info */}
             <div className="space-y-1 border-b-2 border-dashed border-gray-800 pb-4 mb-4">
                 <div className="flex justify-between">
                     <span>Cashier:</span>
@@ -53,61 +53,41 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
                         <span className="font-semibold">{transaction.setName}</span>
                     </div>
                 )}
-                {transaction.gameName && (
-                    <div className="flex justify-between">
-                        <span>Game:</span>
-                        <span className="font-semibold">{transaction.gameName}</span>
-                    </div>
-                )}
-                {transaction.gameTypeName && (
-                    <div className="flex justify-between">
-                        <span>Type:</span>
-                        <span className="font-semibold">{transaction.gameTypeName}</span>
-                    </div>
-                )}
-                {transaction.gameCategoryName && (
-                    <div className="flex justify-between">
-                        <span>Category:</span>
-                        <span className="font-semibold">{transaction.gameCategoryName}</span>
-                    </div>
-                )}
-                {transaction.gameSettingName && (
-                    <div className="flex justify-between">
-                        <span>Setting:</span>
-                        <span className="font-semibold">{transaction.gameSettingName}</span>
-                    </div>
-                )}
-                <div className="flex justify-between">
-                    <span>Duration:</span>
-                    <span className="font-semibold">
-                        {transaction.hours === 0 ? 'Open Hour' : `${transaction.hours}h`}
-                    </span>
-                </div>
             </div>
 
-            {/* Items (if any) */}
-            {transaction.items && transaction.items.length > 0 && (
-                <div className="border-b-2 border-dashed border-gray-800 pb-4 mb-4">
-                    <div className="font-bold mb-2">ITEMS:</div>
-                    {transaction.items.map((item, idx) => (
-                        <div key={idx} className="mb-2">
-                            <div className="flex justify-between">
-                                <span className="flex-1">{item.itemName}</span>
+            {/* Items */}
+            <div className="border-b-2 border-dashed border-gray-800 pb-4 mb-4">
+                <div className="font-bold mb-2">ITEMS:</div>
+                {transaction.items && transaction.items.length > 0 ? (
+                    transaction.items.map((item, idx) => (
+                        <div key={idx} className="mb-3">
+                            <div className="flex justify-between items-start">
+                                <span className="flex-1 font-medium">{item.itemName}</span>
                                 <span className="w-16 text-right">${item.unitPrice.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between text-xs text-gray-600">
+                            <div className="flex justify-between text-xs text-gray-600 mt-1">
                                 <span className="pl-2">{item.categoryName}</span>
                                 <span>x{item.quantity}</span>
                                 <span className="w-16 text-right font-semibold">${item.lineTotal.toFixed(2)}</span>
                             </div>
                         </div>
-                    ))}
-                </div>
-            )}
+                    ))
+                ) : (
+                    <div className="text-center text-gray-500 py-2">No items</div>
+                )}
+            </div>
 
-            {/* Total */}
-            <div className="border-b-2 border-gray-800 pb-2 mb-4">
-                <div className="flex justify-between text-xl font-bold">
+            {/* Totals */}
+            <div className="space-y-1 border-b-2 border-gray-800 pb-2 mb-4">
+                <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>${transaction.totalPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span>Tax:</span>
+                    <span>$0.00</span>
+                </div>
+                <div className="flex justify-between text-xl font-bold mt-2">
                     <span>TOTAL:</span>
                     <span>${transaction.totalPrice.toFixed(2)}</span>
                 </div>
@@ -115,7 +95,7 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
 
             {/* Footer */}
             <div className="text-center text-xs border-b-2 border-dashed border-gray-800 pb-4 mb-4">
-                <p>Thank you for your business!</p>
+                <p>Thank you for your order!</p>
                 <p className="mt-1">Please come again</p>
             </div>
 
@@ -132,4 +112,4 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
     );
 };
 
-export default GameInvoice;
+export default ItemInvoice;

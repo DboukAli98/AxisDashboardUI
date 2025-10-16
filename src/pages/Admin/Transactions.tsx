@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getItemTransactions, ItemTransaction } from '../../services/transactionService';
-import { getStatusName, STATUS_ENABLED } from '../../services/statuses';
+import { getStatusName, STATUS_ENABLED, STATUS_PROCESSED_PAID } from '../../services/statuses';
 
 export default function Transactions() {
     const [items, setItems] = useState<ItemTransaction[]>([]);
@@ -98,7 +98,9 @@ export default function Transactions() {
                                                 <div>
                                                     <div className="text-xs text-gray-500">Status</div>
                                                     <span
-                                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${t.statusId === STATUS_ENABLED ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${t.statusId === STATUS_ENABLED || t.statusId === STATUS_PROCESSED_PAID
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : 'bg-gray-100 text-gray-800'
                                                             }`}
                                                     >
                                                         {getStatusName(t.statusId) || t.statusId}
