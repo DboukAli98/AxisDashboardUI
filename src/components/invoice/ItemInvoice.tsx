@@ -26,7 +26,7 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             {/* Header */}
             <div className="text-center border-b-2 border-dashed border-gray-800 pb-4 mb-4">
                 <div className="text-xl font-bold mb-1">ORDER RECEIPT</div>
-                <div className="text-xs">COFFEE SHOP</div>
+                <div className="text-xs">AXIS COFFEE SHOP</div>
                 <div className="text-xs mt-2">{formattedDate}</div>
                 <div className="text-xs">Invoice #{transaction.transactionId}</div>
             </div>
@@ -95,7 +95,7 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
 
             {/* Footer */}
             <div className="text-center text-xs border-b-2 border-dashed border-gray-800 pb-4 mb-4">
-                <p>Thank you for your order!</p>
+                <p>Thank you for your order at AXIS COFFEE SHOP!</p>
                 <p className="mt-1">Please come again</p>
             </div>
 
