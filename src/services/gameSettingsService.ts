@@ -34,8 +34,10 @@ export async function getSettings(
   page = 1,
   pageSize = 10
 ): Promise<PagedSettingsResponse> {
+  // Add cache-buster to avoid stale cached responses
+  const ts = Date.now();
   const res = await api.get<PagedSettingsResponse>(
-    `/setting?Page=${page}&PageSize=${pageSize}`
+    `/setting?Page=${page}&PageSize=${pageSize}&_=${ts}`
   );
   return res.data;
 }
