@@ -72,7 +72,7 @@ export default function Menu() {
         : items;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+        <div style={{ fontFamily: "'Cygre', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial" }} className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
             {/* Hero Section */}
             <div className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-black opacity-40"></div>
@@ -95,8 +95,8 @@ export default function Menu() {
                     <button
                         onClick={() => setSelectedCategory(null)}
                         className={`px-4 sm:px-8 py-3 rounded-full font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 ${selectedCategory === null
-                                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-2xl shadow-purple-500/50"
-                                : "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+                            ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-2xl shadow-purple-500/50"
+                            : "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
                             }`}
                     >
                         All Items
@@ -106,8 +106,8 @@ export default function Menu() {
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
                             className={`px-4 sm:px-8 py-3 rounded-full font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 ${selectedCategory === cat.id
-                                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-2xl shadow-purple-500/50"
-                                    : "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+                                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-2xl shadow-purple-500/50"
+                                : "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
                                 }`}
                         >
                             {cat.name}
@@ -137,8 +137,8 @@ export default function Menu() {
                                     <div className="absolute top-2 right-2 z-10">
                                         <span
                                             className={`px-2 py-1 rounded-full text-xs font-bold backdrop-blur-sm ${inStock
-                                                    ? "bg-green-500/90 text-white"
-                                                    : "bg-red-500/90 text-white"
+                                                ? "bg-green-500/90 text-white"
+                                                : "bg-red-500/90 text-white"
                                                 }`}
                                         >
                                             {inStock ? "✓" : "✕"}
@@ -173,7 +173,7 @@ export default function Menu() {
                                         {/* Price */}
                                         <div className="flex items-center justify-between pt-2 border-t border-white/20">
                                             <div className="flex items-baseline">
-                                                <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                                <span className="text-xl font-bold text-white">
                                                     ${item.price.toFixed(2)}
                                                 </span>
                                             </div>
