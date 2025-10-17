@@ -69,6 +69,17 @@ const GameCashieRoute: React.FC<{ children: React.ReactElement }> = ({ children 
 };
 
 export default function App() {
+  // Role-based home element: redirect non-admin operational roles away from dashboard
+  const RoleHome: React.FC = () => {
+    const { hasRole } = useAuth();
+    if (hasRole("cashier")) {
+      return <Navigate to="/cashier/items" replace />;
+    }
+    if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier")) {
+      return <Navigate to="/game/sessions" replace />;
+    }
+    return <Home />;
+  };
   return (
     <>
       <Router>
@@ -80,7 +91,7 @@ export default function App() {
 
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route index path="/" element={<Home />} />
+              <Route index path="/" element={<RoleHome />} />
 
               {/* Others Page */}
               <Route path="/profile" element={<UserProfiles />} />
