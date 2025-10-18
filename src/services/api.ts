@@ -67,44 +67,11 @@ api.interceptors.request.use(
   }
 );
 
-// Simple refresh token flow placeholder
-let isRefreshing = false;
-let pendingQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
-
-async function onTokenRefreshed(newToken: string) {
-  // store new token
-  try {
-    localStorage.setItem("access_token", newToken);
-  } catch {
-    // ignore
-  }
-  pendingQueue.forEach(({ resolve }) => resolve(undefined));
-  pendingQueue = [];
-}
-
-function onTokenRefreshFailed(err: unknown) {
-  pendingQueue.forEach(({ reject }) => reject(err));
-  pendingQueue = [];
-}
-
-async function refreshAccessToken(): Promise<string> {
-  // TODO: wire to your backend refresh endpoint
-  // Example:
-  // const res = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true });
-  // return res.data.access_token;
-  throw new Error("Refresh token endpoint not implemented");
-}
-
-// Response interceptor: normalize errors and handle 401 with token refresh
+// Response interceptor: normalize errors and handle 401/403 with logout
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {
-      _retry?: boolean;
-    };
+    const status = error.response?.status;
 
     // Network/timeout
     if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
@@ -116,48 +83,27 @@ api.interceptors.response.use(
       return Promise.reject(apiError);
     }
 
-    const status = error.response?.status;
-
-    // Try refresh once on 401
-    if (status === 401 && !originalRequest._retry) {
-      if (!isRefreshing) {
-        isRefreshing = true;
-        originalRequest._retry = true;
-        try {
-          const newToken = await refreshAccessToken();
-          await onTokenRefreshed(newToken);
-          isRefreshing = false;
-
-          // retry original with new token
-          const hUnknown = (originalRequest.headers ?? {}) as unknown as {
-            set?: (key: string, value: string) => void;
-          } & Record<string, string>;
-          if (typeof hUnknown.set === "function") {
-            hUnknown.set("Authorization", `Bearer ${newToken}`);
-          } else {
-            originalRequest.headers = {
-              ...(hUnknown as Record<string, string>),
-              Authorization: `Bearer ${newToken}`,
-            } as AxiosRequestHeaders;
-          }
-
-          return api(originalRequest);
-        } catch (err) {
-          isRefreshing = false;
-          onTokenRefreshFailed(err);
-          const apiError: ApiError = {
-            status: 401,
-            message: "Unauthorized",
-            code: "UNAUTHORIZED",
-          };
-          return Promise.reject(apiError);
-        }
+    // On 401/403: logout by clearing token and redirecting to signin (if not already there)
+    if (status === 401 || status === 403) {
+      try {
+        localStorage.removeItem("access_token");
+      } catch {
+        /* ignore */
       }
-
-      // queue while refreshing
-      return new Promise((resolve, reject) => {
-        pendingQueue.push({ resolve, reject });
-      }).then(() => api(originalRequest));
+      // Only redirect if not already on login page
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.includes("/signin") &&
+        !window.location.pathname.includes("/signup")
+      ) {
+        window.location.assign("/signin");
+      }
+      const apiError: ApiError = {
+        status: status ?? 0,
+        message: status === 403 ? "Forbidden" : "Unauthorized",
+        code: status === 403 ? "FORBIDDEN" : "UNAUTHORIZED",
+      };
+      return Promise.reject(apiError);
     }
 
     // Build a normalized error
