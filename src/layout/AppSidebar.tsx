@@ -125,12 +125,13 @@ const AppSidebar: React.FC = () => {
     }
 
     // GameCashie: limited menu for game cashier operations
-    if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier")) {
+    if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier") || hasRole("cashiergame")) {
       return [
         // use non-admin paths so the GameCashie role isn't blocked by AdminRoute
         { icon: <PlugInIcon />, name: "Game Session", path: "/game/sessions" },
 
         { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
+        { icon: <BoxCubeIcon />, name: "Items", path: "/gamecashier/items" },
       ];
     }
 
