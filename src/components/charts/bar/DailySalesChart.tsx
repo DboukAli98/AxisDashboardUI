@@ -2,15 +2,32 @@ import { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { getDailySales, DailySalesData } from "../../../services/transactionService";
+import { getCategories, CategoryDto } from "../../../services/categoryService";
 import Loader from "../../ui/Loader";
 
 type DateFilter = 'today' | '3days' | '2weeks' | 'month';
 
 export default function DailySalesChart() {
     const [salesData, setSalesData] = useState<DailySalesData[]>([]);
+    const [itemCategories, setItemCategories] = useState<CategoryDto[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [dateFilter, setDateFilter] = useState<DateFilter>('month');
+
+    // Load item categories on mount
+    useEffect(() => {
+        let mounted = true;
+        getCategories(1, 100)
+            .then((res) => {
+                if (!mounted) return;
+                setItemCategories(res.data || []);
+            })
+            .catch(() => {
+                // Ignore category load errors
+            });
+        return () => { mounted = false; };
+    }, []);
 
     useEffect(() => {
         let mounted = true;
@@ -47,6 +64,7 @@ export default function DailySalesChart() {
         getDailySales({
             from: from.toISOString(),
             to: to.toISOString(),
+            categoryIds: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
         })
             .then((data) => {
                 if (!mounted) return;
@@ -65,7 +83,7 @@ export default function DailySalesChart() {
         return () => {
             mounted = false;
         };
-    }, [dateFilter]);
+    }, [dateFilter, selectedCategories]);
 
     // Prepare chart data
     const categories = salesData.map((d) => {
@@ -186,6 +204,16 @@ export default function DailySalesChart() {
         { value: 'month', label: 'Last Month' },
     ];
 
+    const toggleCategory = (categoryId: number) => {
+        setSelectedCategories((prev) => {
+            if (prev.includes(categoryId)) {
+                return prev.filter((id) => id !== categoryId);
+            } else {
+                return [...prev, categoryId];
+            }
+        });
+    };
+
     const exportToExcel = () => {
         if (salesData.length === 0) {
             alert('No data to export');
@@ -239,8 +267,8 @@ export default function DailySalesChart() {
                             key={btn.value}
                             onClick={() => setDateFilter(btn.value)}
                             className={`px-4 py-2 rounded-lg font-medium transition-colors ${dateFilter === btn.value
-                                    ? 'bg-indigo-600 text-white shadow-md'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
                                 }`}
                         >
                             {btn.label}
@@ -259,6 +287,42 @@ export default function DailySalesChart() {
                     Export to Excel
                 </button>
             </div>
+
+            {/* Category Filter */}
+            {itemCategories.length > 0 && (
+                <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <h3 className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300">Filter by Item Category:</h3>
+                    <div className="flex flex-wrap gap-3">
+                        {itemCategories.map((cat) => (
+                            <label
+                                key={cat.id}
+                                className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 rounded-md cursor-pointer hover:shadow-md transition-shadow"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedCategories.includes(cat.id)}
+                                    onChange={() => toggleCategory(cat.id)}
+                                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-200">{cat.name}</span>
+                            </label>
+                        ))}
+                    </div>
+                    {selectedCategories.length > 0 && (
+                        <div className="mt-2 flex items-center gap-2">
+                            <span className="text-xs text-gray-600 dark:text-gray-400">
+                                {selectedCategories.length} categor{selectedCategories.length === 1 ? 'y' : 'ies'} selected
+                            </span>
+                            <button
+                                onClick={() => setSelectedCategories([])}
+                                className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 underline"
+                            >
+                                Clear all
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Chart */}
             <div className="max-w-full overflow-x-auto custom-scrollbar">

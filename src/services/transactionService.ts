@@ -161,6 +161,7 @@ export async function getGameTransactions(query: TransactionsReportQuery = {}) {
 export type DailySalesQuery = {
   from?: string; // date-time format
   to?: string; // date-time format
+  categoryIds?: string; // comma-separated category IDs, e.g., "8,5"
 };
 
 export type DailySalesData = {
@@ -174,6 +175,7 @@ export async function getDailySales(query: DailySalesQuery = {}) {
   const params: Record<string, unknown> = {};
   if (query.from) params.from = query.from;
   if (query.to) params.to = query.to;
+  if (query.categoryIds) params.categoryIds = query.categoryIds;
 
   const res = await get<DailySalesData[]>("/TransactionsReports/daily-sales", {
     params,
