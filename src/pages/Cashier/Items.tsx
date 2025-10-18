@@ -21,6 +21,8 @@ import ItemInvoice from "../../components/invoice/ItemInvoice";
 
 export default function CashierItems() {
     const [items, setItems] = useState<ItemDto[]>([]);
+    // Cache of items by id to persist details across category/page switches
+    const [itemLookup, setItemLookup] = useState<Record<string, ItemDto>>({});
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -81,6 +83,14 @@ export default function CashierItems() {
                 if (!mounted) return;
                 setItems(data.data || []);
                 setTotal(data.totalCount || 0);
+                // Merge fetched items into lookup cache
+                setItemLookup((prev) => {
+                    const next = { ...prev };
+                    (data.data || []).forEach((it) => {
+                        next[String(it.id)] = it;
+                    });
+                    return next;
+                });
             })
             .catch((err) => {
                 if (!mounted) return;
@@ -150,10 +160,11 @@ export default function CashierItems() {
     const orderLines = Object.entries(selectedItems)
         .filter(([, q]) => Number(q) > 0)
         .map(([itemId, q]) => {
-            const item = items.find((it) => String(it.id) === String(itemId));
+            // Use cached lookup so items from other categories/pages are resolved
+            const item = itemLookup[String(itemId)];
             const qty = Number(q) || 0;
             const unit = item && item.price != null ? Number(item.price) : 0;
-            const name = item ? item.name : itemId;
+            const name = item ? item.name : String(itemId);
             const lineTotal = unit * qty;
             const image = item?.imagePath ? resolveImageUrl(item.imagePath) : '';
             return { itemId, name, qty, unit, lineTotal, image };
@@ -248,17 +259,22 @@ export default function CashierItems() {
                                     <button
                                         className="px-2 py-1 bg-gray-200 rounded"
                                         onClick={() => setSelectedItems(s => {
-                                            const cur = s[it.id] || 0;
+                                            const key = String(it.id);
+                                            const cur = s[key] || 0;
                                             const next = Math.max(0, cur - 1);
                                             const copy = { ...s };
-                                            if (next === 0) delete copy[it.id]; else copy[it.id] = next;
+                                            if (next === 0) delete copy[key]; else copy[key] = next;
                                             return copy;
                                         })}
                                     >-</button>
-                                    <div className="px-3 py-1 border rounded">{selectedItems[it.id] || 0}</div>
+                                    <div className="px-3 py-1 border rounded">{selectedItems[String(it.id)] || 0}</div>
                                     <button
                                         className="px-2 py-1 bg-gray-200 rounded"
-                                        onClick={() => setSelectedItems(s => ({ ...s, [it.id]: (s[it.id] || 0) + 1 }))}
+                                        onClick={() => setSelectedItems(s => {
+                                            const key = String(it.id);
+                                            const cur = s[key] || 0;
+                                            return { ...s, [key]: cur + 1 };
+                                        })}
                                     >+</button>
                                 </div>
                             </div>
@@ -424,8 +440,8 @@ export default function CashierItems() {
                                                                 Invoice #{invoice.transactionId}
                                                             </span>
                                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : 'bg-gray-100 text-gray-800'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : 'bg-gray-100 text-gray-800'
                                                                 }`}>
                                                                 {getStatusName(invoice.statusId) || 'Unknown'}
                                                             </span>
