@@ -158,9 +158,33 @@ export async function getGameTransactions(query: TransactionsReportQuery = {}) {
   return res;
 }
 
+export type DailySalesQuery = {
+  from?: string; // date-time format
+  to?: string; // date-time format
+};
+
+export type DailySalesData = {
+  date: string; // ISO date-time
+  itemsTotal: number;
+  gamesTotal: number;
+  grandTotal: number;
+};
+
+export async function getDailySales(query: DailySalesQuery = {}) {
+  const params: Record<string, unknown> = {};
+  if (query.from) params.from = query.from;
+  if (query.to) params.to = query.to;
+
+  const res = await get<DailySalesData[]>("/TransactionsReports/daily-sales", {
+    params,
+  });
+  return res;
+}
+
 export default {
   getTransactions,
   createCoffeeShopOrder,
   getItemTransactions,
   getGameTransactions,
+  getDailySales,
 };

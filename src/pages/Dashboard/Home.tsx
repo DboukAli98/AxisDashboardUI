@@ -5,6 +5,8 @@ import MonthlyTarget from "../../components/ecommerce/MonthlyTarget";
 import RecentOrders from "../../components/ecommerce/RecentOrders";
 import DemographicCard from "../../components/ecommerce/DemographicCard";
 import PageMeta from "../../components/common/PageMeta";
+import DailySalesChart from "../../components/charts/bar/DailySalesChart";
+import ComponentCard from "../../components/common/ComponentCard";
 
 export default function Home() {
   return (
@@ -26,6 +28,12 @@ export default function Home() {
 
         <div className="col-span-12">
           <StatisticsChart />
+        </div>
+
+        <div className="col-span-12">
+          <ComponentCard title="Daily Sales (Last 30 Days)">
+            <DailySalesChart />
+          </ComponentCard>
         </div>
 
         <div className="col-span-12 xl:col-span-5">
