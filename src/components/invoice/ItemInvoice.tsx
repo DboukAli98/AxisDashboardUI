@@ -10,7 +10,96 @@ interface ItemInvoiceProps {
 const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
     const handlePrint = () => {
         if (onPrint) onPrint();
-        window.print();
+
+        const invoiceEl = document.getElementById('item-invoice');
+        if (!invoiceEl) { window.print(); return; }
+
+        const win = window.open('', 'PRINT', 'width=420,height=700');
+        if (!win) return;
+
+        win.document.open();
+        win.document.write(`
+      <html>
+        <head>
+          <meta charSet="utf-8" />
+          <title>Invoice #${transaction.transactionId}</title>
+          <style>
+            /* --- POS PAGE: 80mm roll --- */
+            @page {
+              size: 80mm auto;
+              margin: 0 0 18mm 0; /* bottom margin to guarantee extra feed */
+            }
+            html, body {
+              width: 80mm;
+              margin: 0;
+              padding: 0;
+              background: #fff;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+
+            /* Root container in popup */
+            .pos-print {
+              width: 76mm !important;          /* safe printable width */
+              margin: 0 auto !important;
+              padding: 5mm 2mm 16mm !important; /* extra bottom padding */
+              box-sizing: border-box !important;
+              page-break-inside: avoid !important;
+              max-width: none !important;
+            }
+
+            /* Larger, receipt-friendly typography */
+            .pos-print, .pos-print * {
+              font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace !important;
+              font-size: 15px !important;
+              line-height: 1.5 !important;
+              color: #000 !important;
+            }
+
+            /* Tailwind fallbacks (if stylesheet isn't loaded in popup) */
+            .pos-print .text-xs { font-size: 12px !important; }
+            .pos-print .text-sm { font-size: 15px !important; }
+            .pos-print .text-lg { font-size: 18px !important; }
+            .pos-print .text-xl { font-size: 20px !important; }
+            .pos-print .text-2xl { font-size: 22px !important; }
+            .pos-print .font-bold { font-weight: 700 !important; }
+            .pos-print .font-semibold { font-weight: 600 !important; }
+            .pos-print .border-b-2 { border-bottom-width: 1px !important; }
+            .pos-print .border-dashed { border-style: dashed !important; }
+            .pos-print .flex { display: flex !important; }
+            .pos-print .justify-between { justify-content: space-between !important; }
+            .pos-print .text-center { text-align: center !important; }
+            .pos-print .mb-4 { margin-bottom: 8px !important; }
+            .pos-print .pb-4 { padding-bottom: 8px !important; }
+            .pos-print .mb-3 { margin-bottom: 8px !important; }
+            .pos-print .mt-1 { margin-top: 4px !important; }
+            .pos-print .print\\:hidden, .pos-print button { display: none !important; }
+
+            /* Final spacer in case the driver trims trailing blanks */
+            .pos-spacer { height: 20mm; width: 100%; display: block; }
+          </style>
+        </head>
+        <body></body>
+      </html>
+    `);
+        win.document.close();
+
+        // (Optional) bring Tailwind/app styles into the popup so classes render
+        document.querySelectorAll('link[rel="stylesheet"], style').forEach(n => {
+            try { win.document.head.appendChild(n.cloneNode(true)); } catch {
+                console.info('Could not clone stylesheet for print window.');
+            }
+        });
+
+        const clone = invoiceEl.cloneNode(true) as HTMLElement;
+        clone.classList.add('pos-print');
+        win.document.body.appendChild(clone);
+
+        const spacer = win.document.createElement('div');
+        spacer.className = 'pos-spacer';
+        win.document.body.appendChild(spacer);
+
+        setTimeout(() => { win.focus(); win.print(); win.close(); }, 150);
     };
 
     const formattedDate = new Date(transaction.createdOn).toLocaleString('en-US', {
@@ -21,8 +110,9 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
         minute: '2-digit',
     });
 
+    // Screen/modal view (unchanged)
     return (
-        <div className="bg-white p-6 max-w-sm mx-auto font-mono text-sm">
+        <div id="item-invoice" className="bg-white p-6 max-w-sm mx-auto font-mono text-sm">
             {/* Header */}
             <div className="text-center border-b-2 border-dashed border-gray-800 pb-4 mb-4">
                 <div className="text-xl font-bold mb-1">ORDER RECEIPT</div>
@@ -96,7 +186,7 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             {/* Footer */}
             <div className="text-center text-xs border-b-2 border-dashed border-gray-800 pb-4 mb-4">
                 <p>Thank you for your order at AXIS COFFEE SHOP!</p>
-                <p className="mt-1">Please come again</p>
+
             </div>
 
             {/* Print Button */}
