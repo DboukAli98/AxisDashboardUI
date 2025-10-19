@@ -17,14 +17,11 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
             return;
         }
 
-        // Open a clean document for printing only the invoice
-        const win = window.open('', 'PRINT', 'width=800,height=1000');
-        if (!win) {
-            window.print();
-            return;
-        }
+        // Open a clean popup
+        const win = window.open('', 'PRINT', 'width=420,height=700');
+        if (!win) return;
 
-        // Base HTML
+        // Write a minimal HTML shell with POS-specific styles
         win.document.open();
         win.document.write(`
       <html>
@@ -32,14 +29,59 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
           <meta charSet="utf-8" />
           <title>Invoice #${transaction.transactionId}</title>
           <style>
-            /* Page setup for print */
-            @media print {
-              @page { size: A4; margin: 12mm; } /* change to: size: 80mm auto; margin: 0; for receipt printers */
-              html, body { margin: 0; padding: 0; }
-              #invoice { page-break-inside: avoid; }
+            /* --- POS PAGE: 80mm roll --- */
+            @page {
+              size: 80mm auto;
+              margin: 0;
             }
-            /* Basic fallback font if Tailwind isn't loaded for some reason */
-            body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+            html, body {
+              width: 80mm;
+              margin: 0;
+              padding: 0;
+              background: #fff;
+            }
+
+            /* Root container in popup */
+            .pos-print {
+              width: 76mm !important;        /* safe printable width */
+              margin: 0 auto !important;
+              padding: 5mm 2mm !important;
+              box-sizing: border-box !important;
+              page-break-inside: avoid !important;
+              max-width: none !important;
+            }
+
+            /* Make everything larger and readable on thermal paper */
+            .pos-print, .pos-print * {
+              font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace !important;
+              font-size: 15px !important;     /* bump base font size */
+              line-height: 1.5 !important;
+              color: #000 !important;
+            }
+
+            /* Upgrade Tailwind size utilities (if present) */
+            .pos-print .text-xs { font-size: 12px !important; }
+            .pos-print .text-sm { font-size: 15px !important; }
+            .pos-print .text-lg { font-size: 18px !important; }
+            .pos-print .text-xl { font-size: 20px !important; }
+            .pos-print .text-2xl { font-size: 22px !important; }
+            .pos-print .font-bold { font-weight: 700 !important; }
+            .pos-print .font-semibold { font-weight: 600 !important; }
+
+            /* Borders / separators look good on receipts */
+            .pos-print .border-b-2 { border-bottom-width: 1px !important; }
+            .pos-print .border-dashed { border-style: dashed !important; }
+
+            /* Layout helpers in case Tailwind isn't loaded */
+            .pos-print .flex { display: flex !important; }
+            .pos-print .justify-between { justify-content: space-between !important; }
+            .pos-print .text-center { text-align: center !important; }
+            .pos-print .mb-4 { margin-bottom: 8px !important; }
+            .pos-print .pb-4 { padding-bottom: 8px !important; }
+            .pos-print .mb-2 { margin-bottom: 6px !important; }
+
+            /* Hide any buttons that might be inside */
+            .pos-print .print\\:hidden, .pos-print button { display: none !important; }
           </style>
         </head>
         <body></body>
@@ -47,35 +89,28 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
     `);
         win.document.close();
 
-        // Copy over existing styles (Tailwind, app CSS, inline <style> tags)
+        // Optionally include Tailwind/app styles so classes still work.
+        // This doesn't affect your modal; it's inside the popup only.
         const styleNodes = document.querySelectorAll<HTMLLinkElement | HTMLStyleElement>(
             'link[rel="stylesheet"], style'
         );
         styleNodes.forEach((n) => {
             try {
                 win.document.head.appendChild(n.cloneNode(true));
-            } catch {
-                /* ignore CORS-protected styles */
-            }
+            } catch { /* ignore cross-origin */ }
         });
 
-        // Inject the invoice markup
+        // Clone the invoice into the popup and tag it for POS styling
         const clone = invoiceEl.cloneNode(true) as HTMLElement;
+        clone.classList.add('pos-print'); // <— only applied in popup
         win.document.body.appendChild(clone);
 
-        // Ensure the content is laid out before printing
-        const doPrint = () => {
+        // Print after layout settles
+        setTimeout(() => {
             win.focus();
             win.print();
             win.close();
-        };
-
-        // If styles are async (like Tailwind from a link), give a tick before print
-        if (document.readyState === 'complete') {
-            setTimeout(doPrint, 100);
-        } else {
-            win.onload = () => setTimeout(doPrint, 100);
-        }
+        }, 150);
     };
 
     const formattedDate = new Date(transaction.createdOn).toLocaleString('en-US', {
@@ -86,6 +121,7 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
         minute: '2-digit',
     });
 
+    // SCREEN/MODAL RENDER — unchanged appearance in your app
     return (
         <div id="invoice" className="bg-white p-6 max-w-sm mx-auto font-mono text-sm">
             {/* Header */}
@@ -150,7 +186,7 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
                 </div>
             </div>
 
-            {/* Items (if any) */}
+            {/* Items */}
             {transaction.items && transaction.items.length > 0 && (
                 <div className="border-b-2 border-dashed border-gray-800 pb-4 mb-4">
                     <div className="font-bold mb-2">ITEMS:</div>
@@ -184,7 +220,7 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
                 <p className="mt-1">Please come again</p>
             </div>
 
-            {/* Print Button (hidden by Tailwind in print) */}
+            {/* Print Button (only affects screen) */}
             <div className="text-center print:hidden">
                 <button
                     onClick={handlePrint}
