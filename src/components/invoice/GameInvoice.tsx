@@ -75,7 +75,7 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
 
           /* Big trailing spacer so cutter never trims the last line */
           .pos-spacer {
-            height: 28mm;         /* ⬅ increase if still trimmed (try 30–35mm) */
+            height: 32mm;         /* ⬅ increase if still trimmed (try 30–35mm) */
             width: 100%;
             display: block;
           }
