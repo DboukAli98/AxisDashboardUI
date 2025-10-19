@@ -8,119 +8,116 @@ interface GameInvoiceProps {
 }
 
 const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
+
+
+
     const handlePrint = () => {
         if (onPrint) onPrint();
 
         const invoiceEl = document.getElementById('invoice');
-        if (!invoiceEl) {
-            window.print(); // fallback
-            return;
-        }
+        if (!invoiceEl) { window.print(); return; }
 
-        // Open a clean popup
         const win = window.open('', 'PRINT', 'width=420,height=700');
         if (!win) return;
 
-        // Write a minimal HTML shell with POS-specific styles
         win.document.open();
         win.document.write(`
-      <html>
-        <head>
-          <meta charSet="utf-8" />
-          <title>Invoice #${transaction.transactionId}</title>
-          <style>
-            /* --- POS PAGE: 80mm roll --- */
-            @page { size: 80mm auto; margin: 0; }
+    <html>
+      <head>
+        <meta charSet="utf-8" />
+        <title>Invoice #${transaction.transactionId}</title>
+        <style>
+          /* --- POS PAGE: 80mm roll --- */
+          @page { size: 80mm auto; margin: 0; }
 
-            html, body {
-              width: 80mm;
-              margin: 0;
-              padding: 0;
-              background: #fff;
-            }
+          html, body {
+            width: 80mm;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+          }
 
-            /* Root container in popup */
-            .pos-print {
-              width: 76mm !important;        /* safe printable width */
-              margin: 0 auto !important;
-              padding: 5mm 2mm !important;
-              box-sizing: border-box !important;
-              page-break-inside: avoid !important;
-              max-width: none !important;
-            }
+          /* Root container in popup */
+          .pos-print {
+            width: 76mm !important;          /* safe printable width */
+            margin: 0 auto !important;
+            padding: 5mm 2mm 14mm !important; /* ⬅ extra bottom padding */
+            box-sizing: border-box !important;
+            page-break-inside: avoid !important;
+            max-width: none !important;
+          }
 
-            /* Make everything larger and readable on thermal paper */
-            .pos-print, .pos-print * {
-              font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace !important;
-              font-size: 15px !important;
-              line-height: 1.5 !important;
-              color: #000 !important;
-            }
+          /* Font sizing for thermal readability */
+          .pos-print, .pos-print * {
+            font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace !important;
+            font-size: 15px !important;
+            line-height: 1.5 !important;
+            color: #000 !important;
+          }
 
-            /* Upgrade Tailwind size utilities (if present) */
-            .pos-print .text-xs { font-size: 12px !important; }
-            .pos-print .text-sm { font-size: 15px !important; }
-            .pos-print .text-lg { font-size: 18px !important; }
-            .pos-print .text-xl { font-size: 20px !important; }
-            .pos-print .text-2xl { font-size: 22px !important; }
-            .pos-print .font-bold { font-weight: 700 !important; }
-            .pos-print .font-semibold { font-weight: 600 !important; }
+          /* Tailwind fallbacks (optional) */
+          .pos-print .text-xs { font-size: 12px !important; }
+          .pos-print .text-sm { font-size: 15px !important; }
+          .pos-print .text-lg { font-size: 18px !important; }
+          .pos-print .text-xl { font-size: 20px !important; }
+          .pos-print .text-2xl { font-size: 22px !important; }
+          .pos-print .font-bold { font-weight: 700 !important; }
+          .pos-print .font-semibold { font-weight: 600 !important; }
+          .pos-print .border-b-2 { border-bottom-width: 1px !important; }
+          .pos-print .border-dashed { border-style: dashed !important; }
+          .pos-print .flex { display: flex !important; }
+          .pos-print .justify-between { justify-content: space-between !important; }
+          .pos-print .text-center { text-align: center !important; }
+          .pos-print .mb-4 { margin-bottom: 8px !important; }
+          .pos-print .pb-4 { padding-bottom: 8px !important; }
+          .pos-print .mb-2 { margin-bottom: 6px !important; }
+          .pos-print .print\\:hidden, .pos-print button { display: none !important; }
 
-            /* Borders / separators look good on receipts */
-            .pos-print .border-b-2 { border-bottom-width: 1px !important; }
-            .pos-print .border-dashed { border-style: dashed !important; }
+          /* Big trailing spacer so cutter never trims the last line */
+          .pos-spacer {
+            height: 28mm;         /* ⬅ increase if still trimmed (try 30–35mm) */
+            width: 100%;
+            display: block;
+          }
 
-            /* Layout helpers in case Tailwind isn't loaded */
-            .pos-print .flex { display: flex !important; }
-            .pos-print .justify-between { justify-content: space-between !important; }
-            .pos-print .text-center { text-align: center !important; }
-            .pos-print .mb-4 { margin-bottom: 8px !important; }
-            .pos-print .pb-4 { padding-bottom: 8px !important; }
-            .pos-print .mb-2 { margin-bottom: 6px !important; }
-
-            /* Hide any buttons that might be inside */
-            .pos-print .print\\:hidden, .pos-print button { display: none !important; }
-
-            /* Extra tail so the cutter doesn't chop the last line */
-            .pos-spacer {
-              height: 12mm;           /* adjust if your printer still trims text */
-              width: 100%;
-              display: block;
-            }
-          </style>
-        </head>
-        <body></body>
-      </html>
-    `);
+          /* Force a final break/feed after spacer on some drivers */
+          .force-break {
+            break-after: page;
+            page-break-after: always;
+            height: 0;
+          }
+        </style>
+      </head>
+      <body></body>
+    </html>
+  `);
         win.document.close();
 
-        // Copy Tailwind/app styles into the popup (optional)
         const styleNodes = document.querySelectorAll<HTMLLinkElement | HTMLStyleElement>(
             'link[rel="stylesheet"], style'
         );
-        styleNodes.forEach((n) => {
+        styleNodes.forEach(n => {
             try { win.document.head.appendChild(n.cloneNode(true)); } catch {
-                console.info('Failed to clone a style node into print popup')
+                console.log('Could not clone style node for print window.');
             }
         });
 
-        // Clone the invoice into the popup and tag it for POS styling
         const clone = invoiceEl.cloneNode(true) as HTMLElement;
         clone.classList.add('pos-print');
         win.document.body.appendChild(clone);
 
-        // Add the extra whitespace at the end to avoid cutting the last line
+        // Spacer + forced break/feed
         const spacer = win.document.createElement('div');
         spacer.className = 'pos-spacer';
         win.document.body.appendChild(spacer);
 
-        // Print after layout settles
-        setTimeout(() => {
-            win.focus();
-            win.print();
-            win.close();
-        }, 150);
+        const breaker = win.document.createElement('div');
+        breaker.className = 'force-break';
+        win.document.body.appendChild(breaker);
+
+        setTimeout(() => { win.focus(); win.print(); win.close(); }, 150);
     };
+
 
     const formattedDate = new Date(transaction.createdOn).toLocaleString('en-US', {
         year: 'numeric',
