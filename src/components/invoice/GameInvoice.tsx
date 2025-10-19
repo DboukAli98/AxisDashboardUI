@@ -30,10 +30,8 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
           <title>Invoice #${transaction.transactionId}</title>
           <style>
             /* --- POS PAGE: 80mm roll --- */
-            @page {
-              size: 80mm auto;
-              margin: 0;
-            }
+            @page { size: 80mm auto; margin: 0; }
+
             html, body {
               width: 80mm;
               margin: 0;
@@ -54,7 +52,7 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
             /* Make everything larger and readable on thermal paper */
             .pos-print, .pos-print * {
               font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace !important;
-              font-size: 15px !important;     /* bump base font size */
+              font-size: 15px !important;
               line-height: 1.5 !important;
               color: #000 !important;
             }
@@ -82,6 +80,13 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
 
             /* Hide any buttons that might be inside */
             .pos-print .print\\:hidden, .pos-print button { display: none !important; }
+
+            /* Extra tail so the cutter doesn't chop the last line */
+            .pos-spacer {
+              height: 12mm;           /* adjust if your printer still trims text */
+              width: 100%;
+              display: block;
+            }
           </style>
         </head>
         <body></body>
@@ -89,21 +94,25 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
     `);
         win.document.close();
 
-        // Optionally include Tailwind/app styles so classes still work.
-        // This doesn't affect your modal; it's inside the popup only.
+        // Copy Tailwind/app styles into the popup (optional)
         const styleNodes = document.querySelectorAll<HTMLLinkElement | HTMLStyleElement>(
             'link[rel="stylesheet"], style'
         );
         styleNodes.forEach((n) => {
-            try {
-                win.document.head.appendChild(n.cloneNode(true));
-            } catch { /* ignore cross-origin */ }
+            try { win.document.head.appendChild(n.cloneNode(true)); } catch {
+                console.info('Failed to clone a style node into print popup')
+            }
         });
 
         // Clone the invoice into the popup and tag it for POS styling
         const clone = invoiceEl.cloneNode(true) as HTMLElement;
-        clone.classList.add('pos-print'); // <— only applied in popup
+        clone.classList.add('pos-print');
         win.document.body.appendChild(clone);
+
+        // Add the extra whitespace at the end to avoid cutting the last line
+        const spacer = win.document.createElement('div');
+        spacer.className = 'pos-spacer';
+        win.document.body.appendChild(spacer);
 
         // Print after layout settles
         setTimeout(() => {
