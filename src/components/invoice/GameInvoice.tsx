@@ -8,9 +8,6 @@ interface GameInvoiceProps {
 }
 
 const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
-
-
-
     const handlePrint = () => {
         if (onPrint) onPrint();
 
@@ -22,102 +19,96 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
 
         win.document.open();
         win.document.write(`
-    <html>
-      <head>
-        <meta charSet="utf-8" />
-        <title>Invoice #${transaction.transactionId}</title>
-        <style>
-          /* --- POS PAGE: 80mm roll --- */
-          @page { size: 80mm auto; margin: 0; }
+      <html>
+        <head>
+          <meta charSet="utf-8" />
+          <title>Invoice #${transaction.transactionId}</title>
+          <style>
+            /* --- POS PAGE: 80mm roll --- */
+            /* Reserve feed using a bottom page margin (most drivers honor this). */
+            @page {
+              size: 80mm auto;
+              margin: 0 0 18mm 0; /* ⬅ bottom margin = guaranteed extra paper */
+            }
 
-          html, body {
-            width: 80mm;
-            margin: 0;
-            padding: 0;
-            background: #fff;
-          }
+            html, body {
+              width: 80mm;
+              margin: 0;
+              padding: 0;
+              background: #fff;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              overflow: visible !important;
+            }
 
-          /* Root container in popup */
-          .pos-print {
-            width: 76mm !important;          /* safe printable width */
-            margin: 0 auto !important;
-            padding: 5mm 2mm 14mm !important; /* ⬅ extra bottom padding */
-            box-sizing: border-box !important;
-            page-break-inside: avoid !important;
-            max-width: none !important;
-          }
+            /* Root container in popup */
+            .pos-print {
+              width: 76mm !important;                /* safe printable width */
+              margin: 0 auto !important;
+              padding: 5mm 2mm 16mm !important;      /* ⬅ extra bottom padding */
+              box-sizing: border-box !important;
+              page-break-inside: avoid !important;
+              max-width: none !important;
+            }
 
-          /* Font sizing for thermal readability */
-          .pos-print, .pos-print * {
-            font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace !important;
-            font-size: 15px !important;
-            line-height: 1.5 !important;
-            color: #000 !important;
-          }
+            /* Font sizing for thermal readability */
+            .pos-print, .pos-print * {
+              font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace !important;
+              font-size: 15px !important;
+              line-height: 1.5 !important;
+              color: #000 !important;
+            }
 
-          /* Tailwind fallbacks (optional) */
-          .pos-print .text-xs { font-size: 12px !important; }
-          .pos-print .text-sm { font-size: 15px !important; }
-          .pos-print .text-lg { font-size: 18px !important; }
-          .pos-print .text-xl { font-size: 20px !important; }
-          .pos-print .text-2xl { font-size: 22px !important; }
-          .pos-print .font-bold { font-weight: 700 !important; }
-          .pos-print .font-semibold { font-weight: 600 !important; }
-          .pos-print .border-b-2 { border-bottom-width: 1px !important; }
-          .pos-print .border-dashed { border-style: dashed !important; }
-          .pos-print .flex { display: flex !important; }
-          .pos-print .justify-between { justify-content: space-between !important; }
-          .pos-print .text-center { text-align: center !important; }
-          .pos-print .mb-4 { margin-bottom: 8px !important; }
-          .pos-print .pb-4 { padding-bottom: 8px !important; }
-          .pos-print .mb-2 { margin-bottom: 6px !important; }
-          .pos-print .print\\:hidden, .pos-print button { display: none !important; }
+            /* Tailwind fallbacks (optional) */
+            .pos-print .text-xs { font-size: 12px !important; }
+            .pos-print .text-sm { font-size: 15px !important; }
+            .pos-print .text-lg { font-size: 18px !important; }
+            .pos-print .text-xl { font-size: 20px !important; }
+            .pos-print .text-2xl { font-size: 22px !important; }
+            .pos-print .font-bold { font-weight: 700 !important; }
+            .pos-print .font-semibold { font-weight: 600 !important; }
+            .pos-print .border-b-2 { border-bottom-width: 1px !important; }
+            .pos-print .border-dashed { border-style: dashed !important; }
+            .pos-print .flex { display: flex !important; }
+            .pos-print .justify-between { justify-content: space-between !important; }
+            .pos-print .text-center { text-align: center !important; }
+            .pos-print .mb-4 { margin-bottom: 8px !important; }
+            .pos-print .pb-4 { padding-bottom: 8px !important; }
+            .pos-print .mb-2 { margin-bottom: 6px !important; }
+            .pos-print .print\\:hidden, .pos-print button { display: none !important; }
 
-          /* Big trailing spacer so cutter never trims the last line */
-          .pos-spacer {
-            height: 48mm;         /* ⬅ increase if still trimmed (try 30–35mm) */
-            width: 100%;
-            display: block;
-          }
-
-          /* Force a final break/feed after spacer on some drivers */
-          .force-break {
-            break-after: page;
-            page-break-after: always;
-            height: 0;
-          }
-        </style>
-      </head>
-      <body></body>
-    </html>
-  `);
+            /* Spacer as a last fallback (some drivers still trim blanks) */
+            .pos-spacer {
+              height: 20mm;   /* can bump to 30–40mm if needed */
+              width: 100%;
+              display: block;
+            }
+          </style>
+        </head>
+        <body></body>
+      </html>
+    `);
         win.document.close();
 
-        const styleNodes = document.querySelectorAll<HTMLLinkElement | HTMLStyleElement>(
-            'link[rel="stylesheet"], style'
-        );
-        styleNodes.forEach(n => {
+        // bring over app styles (optional)
+        document.querySelectorAll('link[rel="stylesheet"], style').forEach(n => {
             try { win.document.head.appendChild(n.cloneNode(true)); } catch {
-                console.log('Could not clone style node for print window.');
+                console.info('Could not clone stylesheet for print window.');
             }
         });
 
+        // clone receipt content
         const clone = invoiceEl.cloneNode(true) as HTMLElement;
         clone.classList.add('pos-print');
         win.document.body.appendChild(clone);
 
-        // Spacer + forced break/feed
+        // fallback spacer (kept small because @page margin already feeds)
         const spacer = win.document.createElement('div');
         spacer.className = 'pos-spacer';
         win.document.body.appendChild(spacer);
 
-        const breaker = win.document.createElement('div');
-        breaker.className = 'force-break';
-        win.document.body.appendChild(breaker);
-
         setTimeout(() => { win.focus(); win.print(); win.close(); }, 150);
     };
-
 
     const formattedDate = new Date(transaction.createdOn).toLocaleString('en-US', {
         year: 'numeric',
@@ -127,7 +118,6 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
         minute: '2-digit',
     });
 
-    // SCREEN/MODAL RENDER — unchanged appearance in your app
     return (
         <div id="invoice" className="bg-white p-6 max-w-sm mx-auto font-mono text-sm">
             {/* Header */}
@@ -222,8 +212,8 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
 
             {/* Footer */}
             <div className="text-center text-xs border-b-2 border-dashed border-gray-800 pb-4 mb-4">
-                <p>Thank you for your business!</p>
-                <p className="mt-1">Please come again</p>
+                <p>Thank you for your order!</p>
+
             </div>
 
             {/* Print Button (only affects screen) */}
