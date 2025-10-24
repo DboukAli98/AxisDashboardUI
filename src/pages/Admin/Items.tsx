@@ -33,6 +33,9 @@ export default function Items() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [totalCount, setTotalCount] = useState<number | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+    const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editing, setEditing] = useState<ItemDto | null>(null);
@@ -79,7 +82,7 @@ export default function Items() {
     useEffect(() => {
         let mounted = true;
         setLoading(true);
-        getItems(page, pageSize)
+        getItems(page, pageSize, selectedCategory, debouncedSearch)
             .then((data: ItemListResponse) => {
                 if (!mounted) return;
                 setItems(data.data || []);
@@ -97,7 +100,13 @@ export default function Items() {
         return () => {
             mounted = false;
         };
-    }, [page, pageSize]);
+    }, [page, pageSize, selectedCategory, debouncedSearch]);
+
+    // Debounce search input (300ms)
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
 
     useEffect(() => {
         let mounted = true;
@@ -213,10 +222,29 @@ export default function Items() {
         <div className="p-6">
             <h1 className="text-2xl font-semibold mb-4">Items</h1>
 
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex items-center justify-between">
                 <button className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded" onClick={openCreate}>
                     Add Item
                 </button>
+
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center">
+                        <label className="text-sm text-gray-600 mr-2">Category</label>
+                        <div className="w-48">
+                            <Select
+                                options={[{ value: '', label: 'All' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
+                                defaultValue={selectedCategory ?? ''}
+                                onChange={(v: string | number) => { setPage(1); setSelectedCategory(v === '' ? null : Number(v)); }}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center">
+                        <label className="text-sm text-gray-600 mr-2">Search</label>
+                        <div className="w-56">
+                            <Input placeholder="Search items..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} className="px-2 py-1" />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {loading && <div className="text-gray-600">Loading items...</div>}

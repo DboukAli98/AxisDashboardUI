@@ -275,9 +275,9 @@ export default function CashierItems() {
 
             <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div>
+                    <div className="flex items-center">
                         <label className="text-sm text-gray-600 mr-2">Category</label>
-                        <div className="w-48 inline-block">
+                        <div className="w-48">
                             <Select
                                 options={[{ value: '', label: 'All' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
                                 defaultValue={selectedCategory ?? ''}
@@ -285,7 +285,7 @@ export default function CashierItems() {
                             />
                         </div>
                     </div>
-                    <div>
+                    <div className="flex items-center">
                         <label className="text-sm text-gray-600 mr-2">Search</label>
                         <div className="w-56">
                             <Input placeholder="Search items..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} className="px-2 py-1" />
@@ -295,7 +295,23 @@ export default function CashierItems() {
 
                 <div>
                     {totalSelected > 0 && (
-                        <button className="px-4 py-2 bg-indigo-600 text-white rounded shadow" onClick={() => { setOrderTimestamp(new Date()); setIsDrawerOpen(true); }}>View Order</button>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                className="px-4 py-2 bg-orange-600 text-white rounded shadow hover:bg-orange-700 transition flex items-center gap-2" 
+                                onClick={() => setSelectedItems({})}
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Reset
+                            </button>
+                            <button 
+                                className="px-4 py-2 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 transition" 
+                                onClick={() => { setOrderTimestamp(new Date()); setIsDrawerOpen(true); }}
+                            >
+                                View Order
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -491,11 +507,10 @@ export default function CashierItems() {
                                             <button
                                                 key={filter.value}
                                                 onClick={() => setDateFilter(filter.value as typeof dateFilter)}
-                                                className={`px-3 py-1.5 rounded text-sm font-medium transition ${
-                                                    dateFilter === filter.value
+                                                className={`px-3 py-1.5 rounded text-sm font-medium transition ${dateFilter === filter.value
                                                         ? 'bg-indigo-600 text-white'
                                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 {filter.label}
                                             </button>
@@ -563,74 +578,74 @@ export default function CashierItems() {
 
                                 {/* Invoices List */}
                                 <div className="bg-white rounded-lg shadow p-6">
-                                {loadingInvoices && (
-                                    <div className="flex justify-center py-10">
-                                        <Loader />
-                                    </div>
-                                )}
+                                    {loadingInvoices && (
+                                        <div className="flex justify-center py-10">
+                                            <Loader />
+                                        </div>
+                                    )}
 
-                                {!loadingInvoices && userInvoices.length === 0 && (
-                                    <div className="text-center py-10 text-gray-500">
-                                        No invoices found
-                                    </div>
-                                )}
+                                    {!loadingInvoices && userInvoices.length === 0 && (
+                                        <div className="text-center py-10 text-gray-500">
+                                            No invoices found
+                                        </div>
+                                    )}
 
-                                {!loadingInvoices && userInvoices.length > 0 && (
-                                    <div className="space-y-4">
-                                        {userInvoices.map((invoice) => (
-                                            <div
-                                                key={invoice.transactionId}
-                                                className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
-                                                onClick={() => {
-                                                    setCurrentInvoice(invoice);
-                                                    setInvoiceModalOpen(true);
-                                                }}
-                                            >
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <span className="text-lg font-semibold text-gray-800">
-                                                                Invoice #{invoice.transactionId}
-                                                            </span>
-                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : 'bg-gray-100 text-gray-800'
-                                                                }`}>
-                                                                {getStatusName(invoice.statusId) || 'Unknown'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                                                            <div>
-                                                                <p className="text-gray-500">Date</p>
-                                                                <p className="font-medium text-gray-800">
-                                                                    {new Date(invoice.createdOn).toLocaleDateString()}
-                                                                </p>
+                                    {!loadingInvoices && userInvoices.length > 0 && (
+                                        <div className="space-y-4">
+                                            {userInvoices.map((invoice) => (
+                                                <div
+                                                    key={invoice.transactionId}
+                                                    className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                                                    onClick={() => {
+                                                        setCurrentInvoice(invoice);
+                                                        setInvoiceModalOpen(true);
+                                                    }}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-3 mb-2">
+                                                                <span className="text-lg font-semibold text-gray-800">
+                                                                    Invoice #{invoice.transactionId}
+                                                                </span>
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : 'bg-gray-100 text-gray-800'
+                                                                    }`}>
+                                                                    {getStatusName(invoice.statusId) || 'Unknown'}
+                                                                </span>
                                                             </div>
-                                                            {invoice.roomName && (
+                                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                                                 <div>
-                                                                    <p className="text-gray-500">Room</p>
-                                                                    <p className="font-medium text-gray-800">{invoice.roomName}</p>
+                                                                    <p className="text-gray-500">Date</p>
+                                                                    <p className="font-medium text-gray-800">
+                                                                        {new Date(invoice.createdOn).toLocaleDateString()}
+                                                                    </p>
                                                                 </div>
-                                                            )}
-                                                            <div>
-                                                                <p className="text-gray-500">Items</p>
-                                                                <p className="font-medium text-gray-800">
-                                                                    {invoice.items?.length || 0} item{(invoice.items?.length || 0) !== 1 ? 's' : ''}
-                                                                </p>
+                                                                {invoice.roomName && (
+                                                                    <div>
+                                                                        <p className="text-gray-500">Room</p>
+                                                                        <p className="font-medium text-gray-800">{invoice.roomName}</p>
+                                                                    </div>
+                                                                )}
+                                                                <div>
+                                                                    <p className="text-gray-500">Items</p>
+                                                                    <p className="font-medium text-gray-800">
+                                                                        {invoice.items?.length || 0} item{(invoice.items?.length || 0) !== 1 ? 's' : ''}
+                                                                    </p>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="text-right ml-4">
-                                                        <p className="text-sm text-gray-500">Total</p>
-                                                        <p className="text-2xl font-bold text-gray-800">
-                                                            ${invoice.totalPrice.toFixed(2)}
-                                                        </p>
+                                                        <div className="text-right ml-4">
+                                                            <p className="text-sm text-gray-500">Total</p>
+                                                            <p className="text-2xl font-bold text-gray-800">
+                                                                ${invoice.totalPrice.toFixed(2)}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
