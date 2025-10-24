@@ -44,7 +44,13 @@ const GameSession: React.FC = () => {
     const [currentInvoice, setCurrentInvoice] = useState<GameTransaction | null>(null);
     const [userInvoices, setUserInvoices] = useState<GameTransaction[]>([]);
     const [loadingInvoices, setLoadingInvoices] = useState(false);
-    const [showInvoicesSection, setShowInvoicesSection] = useState(false); useEffect(() => {
+    const [showInvoicesSection, setShowInvoicesSection] = useState(false);
+    const [totalInvoices, setTotalInvoices] = useState<number>(0);
+    const [dateFilter, setDateFilter] = useState<'all' | 'today' | '3days' | 'week' | 'month' | 'custom'>('all');
+    const [customFromDate, setCustomFromDate] = useState<string>('');
+    const [customToDate, setCustomToDate] = useState<string>('');
+
+    useEffect(() => {
         let mounted = true;
         setLoading(true);
         setError(null);
@@ -135,15 +141,76 @@ const GameSession: React.FC = () => {
         if (!showInvoicesSection || !claims?.name) return;
         let mounted = true;
         setLoadingInvoices(true);
-        getGameTransactions({ CreatedBy: [claims.name], PageSize: 50 })
+
+        // Calculate date range based on filter
+        let fromDate: string | undefined;
+        let toDate: string | undefined;
+        const now = new Date();
+
+        switch (dateFilter) {
+            case 'custom': {
+                if (customFromDate) {
+                    // datetime-local format is "YYYY-MM-DDTHH:mm", convert directly to ISO
+                    fromDate = new Date(customFromDate).toISOString();
+                }
+                if (customToDate) {
+                    // datetime-local format is "YYYY-MM-DDTHH:mm", convert directly to ISO
+                    toDate = new Date(customToDate).toISOString();
+                } else if (customFromDate) {
+                    // If only from date is set, use current time as to date
+                    toDate = new Date().toISOString();
+                }
+                break;
+            }
+            case 'today': {
+                const today = new Date();
+                fromDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0)).toISOString();
+                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
+                break;
+            }
+            case '3days': {
+                const threeDaysAgo = new Date(now);
+                threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+                fromDate = new Date(Date.UTC(threeDaysAgo.getUTCFullYear(), threeDaysAgo.getUTCMonth(), threeDaysAgo.getUTCDate(), 0, 0, 0, 0)).toISOString();
+                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
+                break;
+            }
+            case 'week': {
+                const weekAgo = new Date(now);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                fromDate = new Date(Date.UTC(weekAgo.getUTCFullYear(), weekAgo.getUTCMonth(), weekAgo.getUTCDate(), 0, 0, 0, 0)).toISOString();
+                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
+                break;
+            }
+            case 'month': {
+                const monthAgo = new Date(now);
+                monthAgo.setMonth(monthAgo.getMonth() - 1);
+                fromDate = new Date(Date.UTC(monthAgo.getUTCFullYear(), monthAgo.getUTCMonth(), monthAgo.getUTCDate(), 0, 0, 0, 0)).toISOString();
+                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
+                break;
+            }
+            case 'all':
+            default:
+                fromDate = undefined;
+                toDate = undefined;
+                break;
+        }
+
+        getGameTransactions({
+            CreatedBy: [claims.name],
+            PageSize: 50,
+            From: fromDate,
+            To: toDate,
+        })
             .then((res) => {
                 if (!mounted) return;
                 setUserInvoices(res.data || []);
+                setTotalInvoices(res.totalInvoices || 0);
             })
             .catch(() => { /* ignore */ })
             .finally(() => { if (mounted) setLoadingInvoices(false); });
         return () => { mounted = false; };
-    }, [showInvoicesSection, claims?.name]);
+    }, [showInvoicesSection, claims?.name, dateFilter, customFromDate, customToDate]);
 
     return (
         <div className="p-6">
@@ -418,81 +485,168 @@ const GameSession: React.FC = () => {
                 </div>
 
                 {showInvoicesSection && (
-                    <div className="bg-white rounded-lg shadow p-6">
-                        {loadingInvoices && (
-                            <div className="flex justify-center py-10">
-                                <Loader />
-                            </div>
-                        )}
-
-                        {!loadingInvoices && userInvoices.length === 0 && (
-                            <div className="text-center py-10 text-gray-500">
-                                No invoices found
-                            </div>
-                        )}
-
-                        {!loadingInvoices && userInvoices.length > 0 && (
-                            <div className="space-y-4">
-                                {userInvoices.map((invoice) => (
-                                    <div
-                                        key={invoice.transactionId}
-                                        className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
-                                        onClick={() => {
-                                            setCurrentInvoice(invoice);
-                                            setInvoiceModalOpen(true);
-                                        }}
+                    <div className="space-y-4">
+                        {/* Date Filter Buttons */}
+                        <div className="bg-white rounded-lg shadow p-4">
+                            <div className="flex items-center gap-2 flex-wrap mb-4">
+                                <span className="text-sm font-medium text-gray-700 mr-2">Filter by:</span>
+                                {[
+                                    { value: 'all', label: 'All Time' },
+                                    { value: 'today', label: 'Today' },
+                                    { value: '3days', label: 'Last 3 Days' },
+                                    { value: 'week', label: 'Last Week' },
+                                    { value: 'month', label: 'Last Month' },
+                                    { value: 'custom', label: 'Custom Range' },
+                                ].map((filter) => (
+                                    <button
+                                        key={filter.value}
+                                        onClick={() => setDateFilter(filter.value as typeof dateFilter)}
+                                        className={`px-3 py-1.5 rounded text-sm font-medium transition ${dateFilter === filter.value
+                                                ? 'bg-purple-600 text-white'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
                                     >
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <span className="text-lg font-semibold text-gray-800">
-                                                        Invoice #{invoice.transactionId}
-                                                    </span>
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-gray-100 text-gray-800'
-                                                        }`}>
-                                                        {getStatusName(invoice.statusId) || 'Unknown'}
-                                                    </span>
-                                                </div>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                                    <div>
-                                                        <p className="text-gray-500">Date</p>
-                                                        <p className="font-medium text-gray-800">
-                                                            {new Date(invoice.createdOn).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
-                                                    {invoice.roomName && (
-                                                        <div>
-                                                            <p className="text-gray-500">Room</p>
-                                                            <p className="font-medium text-gray-800">{invoice.roomName}</p>
-                                                        </div>
-                                                    )}
-                                                    {invoice.gameName && (
-                                                        <div>
-                                                            <p className="text-gray-500">Game</p>
-                                                            <p className="font-medium text-gray-800">{invoice.gameName}</p>
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="text-gray-500">Duration</p>
-                                                        <p className="font-medium text-gray-800">
-                                                            {invoice.hours === 0 ? 'Open Hour' : `${invoice.hours}h`}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right ml-4">
-                                                <p className="text-sm text-gray-500">Total</p>
-                                                <p className="text-2xl font-bold text-gray-800">
-                                                    ${invoice.totalPrice.toFixed(2)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        {filter.label}
+                                    </button>
                                 ))}
                             </div>
-                        )}
+
+                            {/* Custom Date Range Inputs */}
+                            {dateFilter === 'custom' && (
+                                <div className="border-t pt-4 mt-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label>From Date & Time</Label>
+                                            <Input
+                                                type="datetime-local"
+                                                value={customFromDate}
+                                                onChange={(e) => setCustomFromDate(e.target.value)}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label>To Date & Time</Label>
+                                            <Input
+                                                type="datetime-local"
+                                                value={customToDate}
+                                                onChange={(e) => setCustomToDate(e.target.value)}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </div>
+                                    {customFromDate && customToDate && new Date(customFromDate) > new Date(customToDate) && (
+                                        <div className="mt-2 text-sm text-red-600">
+                                            From date & time must be before or equal to To date & time
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Total Fees Widget */}
+                        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg shadow-lg p-6 text-white">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium opacity-90">Total Fees</p>
+                                    <p className="text-3xl font-bold mt-1">${totalInvoices.toFixed(2)}</p>
+                                    <p className="text-xs opacity-75 mt-1">
+                                        {dateFilter === 'all' ? 'All time' :
+                                            dateFilter === 'today' ? 'Today' :
+                                                dateFilter === '3days' ? 'Last 3 days' :
+                                                    dateFilter === 'week' ? 'Last week' :
+                                                        dateFilter === 'month' ? 'Last month' :
+                                                            dateFilter === 'custom' && customFromDate && customToDate
+                                                                ? `${new Date(customFromDate).toLocaleString()} - ${new Date(customToDate).toLocaleString()}`
+                                                                : dateFilter === 'custom' && customFromDate
+                                                                    ? `From ${new Date(customFromDate).toLocaleString()}`
+                                                                    : 'Custom range'}
+                                    </p>
+                                </div>
+                                <div className="bg-white/20 rounded-full p-4">
+                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Invoices List */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                            {loadingInvoices && (
+                                <div className="flex justify-center py-10">
+                                    <Loader />
+                                </div>
+                            )}
+
+                            {!loadingInvoices && userInvoices.length === 0 && (
+                                <div className="text-center py-10 text-gray-500">
+                                    No invoices found
+                                </div>
+                            )}
+
+                            {!loadingInvoices && userInvoices.length > 0 && (
+                                <div className="space-y-4">
+                                    {userInvoices.map((invoice) => (
+                                        <div
+                                            key={invoice.transactionId}
+                                            className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                                            onClick={() => {
+                                                setCurrentInvoice(invoice);
+                                                setInvoiceModalOpen(true);
+                                            }}
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <span className="text-lg font-semibold text-gray-800">
+                                                            Invoice #{invoice.transactionId}
+                                                        </span>
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-gray-100 text-gray-800'
+                                                            }`}>
+                                                            {getStatusName(invoice.statusId) || 'Unknown'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                                        <div>
+                                                            <p className="text-gray-500">Date</p>
+                                                            <p className="font-medium text-gray-800">
+                                                                {new Date(invoice.createdOn).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                        {invoice.roomName && (
+                                                            <div>
+                                                                <p className="text-gray-500">Room</p>
+                                                                <p className="font-medium text-gray-800">{invoice.roomName}</p>
+                                                            </div>
+                                                        )}
+                                                        {invoice.gameName && (
+                                                            <div>
+                                                                <p className="text-gray-500">Game</p>
+                                                                <p className="font-medium text-gray-800">{invoice.gameName}</p>
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <p className="text-gray-500">Durations</p>
+                                                            <p className="font-medium text-gray-800">
+                                                                {invoice.hours === 0 ? 'Open Hour' : `${invoice.hours}h`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right ml-4">
+                                                    <p className="text-sm text-gray-500">Total</p>
+                                                    <p className="text-2xl font-bold text-gray-800">
+                                                        ${invoice.totalPrice.toFixed(2)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

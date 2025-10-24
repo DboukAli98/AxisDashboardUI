@@ -98,6 +98,7 @@ export type PagedDataResponse<T> = {
   data: T[];
   pageNumber: number;
   pageSize: number;
+  totalInvoices?: number;
 };
 
 export type TransactionsReportQuery = {
