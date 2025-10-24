@@ -296,8 +296,8 @@ export default function CashierItems() {
                 <div>
                     {totalSelected > 0 && (
                         <div className="flex items-center gap-2">
-                            <button 
-                                className="px-4 py-2 bg-orange-600 text-white rounded shadow hover:bg-orange-700 transition flex items-center gap-2" 
+                            <button
+                                className="px-4 py-2 bg-orange-600 text-white rounded shadow hover:bg-orange-700 transition flex items-center gap-2"
                                 onClick={() => setSelectedItems({})}
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -305,8 +305,8 @@ export default function CashierItems() {
                                 </svg>
                                 Reset
                             </button>
-                            <button 
-                                className="px-4 py-2 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 transition" 
+                            <button
+                                className="px-4 py-2 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 transition"
                                 onClick={() => { setOrderTimestamp(new Date()); setIsDrawerOpen(true); }}
                             >
                                 View Order
@@ -508,8 +508,8 @@ export default function CashierItems() {
                                                 key={filter.value}
                                                 onClick={() => setDateFilter(filter.value as typeof dateFilter)}
                                                 className={`px-3 py-1.5 rounded text-sm font-medium transition ${dateFilter === filter.value
-                                                        ? 'bg-indigo-600 text-white'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                     }`}
                                             >
                                                 {filter.label}
