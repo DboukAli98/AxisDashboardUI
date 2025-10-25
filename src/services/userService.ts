@@ -26,6 +26,7 @@ export type RegisterRequest = {
   password: string;
   displayName: string;
   roleName: string;
+  statusId?: number;
 };
 
 export const registerUser = async (body: RegisterRequest) => {

@@ -85,7 +85,7 @@ export default function UsersManagement() {
                 loadUsers();
                 return;
             }
-            const body: RegisterRequest = { email, password, displayName, roleName };
+            const body: RegisterRequest = { email, password, displayName, roleName, statusId: 1 };
             const res = await userService.registerUser(body);
             setMessage(res?.message || 'User created');
             closeModal();
