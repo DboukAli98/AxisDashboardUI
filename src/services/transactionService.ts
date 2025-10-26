@@ -1,4 +1,4 @@
-import { get, post } from "./api";
+import { get, post, put, del } from "./api";
 
 export type TransactionItem = {
   id: string;
@@ -184,10 +184,33 @@ export async function getDailySales(query: DailySalesQuery = {}) {
   return res;
 }
 
+export type TransactionUpdateDto = {
+  roomId?: number | null;
+  gameTypeId?: number | null;
+  gameId?: number | null;
+  gameSettingId?: number | null;
+  hours?: number | null;
+  totalPrice?: number | null;
+  statusId?: number | null;
+  setId?: number | null;
+};
+
+export async function updateTransaction(id: number, dto: TransactionUpdateDto) {
+  const res = await put(`/transactions/${id}`, dto);
+  return res;
+}
+
+export async function deleteTransaction(id: number) {
+  const res = await del(`/transactions/${id}`);
+  return res;
+}
+
 export default {
   getTransactions,
   createCoffeeShopOrder,
   getItemTransactions,
   getGameTransactions,
   getDailySales,
+  updateTransaction,
+  deleteTransaction,
 };
