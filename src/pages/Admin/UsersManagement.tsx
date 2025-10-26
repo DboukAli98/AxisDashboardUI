@@ -7,6 +7,7 @@ import Loader from "../../components/ui/Loader";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Select from "../../components/form/Select";
+import { EyeCloseIcon, EyeIcon } from "../../icons";
 
 export default function UsersManagement() {
     const { isOpen, openModal, closeModal } = useModal();
@@ -28,6 +29,8 @@ export default function UsersManagement() {
     const [deleting, setDeleting] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
+
+    const [showPassword, setShowPassword] = useState(false);
 
     const loadUsers = useCallback(async () => {
         setLoading(true);
@@ -78,7 +81,16 @@ export default function UsersManagement() {
         try {
             if (editingId) {
                 // update
-                const updateBody = { displayName, email, roles: [roleName], statusId };
+                const updateBody: { displayName: string; email: string; roles: string[]; statusId: number; password?: string } = {
+                    displayName,
+                    email,
+                    roles: [roleName],
+                    statusId
+                };
+                // Only include password if it's not empty
+                if (password && password.trim().length > 0) {
+                    updateBody.password = password;
+                }
                 const res = await updateUser(editingId, updateBody);
                 setMessage(res?.message || 'User updated');
                 closeModal();
@@ -221,8 +233,26 @@ export default function UsersManagement() {
                         <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="info@gmail.com" />
                     </div>
                     <div>
-                        <Label htmlFor="password">Password</Label>
-                        <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" />
+                        <Label htmlFor="password">{editingId ? 'New Password (leave blank to keep current)' : 'Password'}</Label>
+
+                        <div className="relative">
+                            <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder={editingId ? "Leave blank to keep current password" : "Enter password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <span
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                            >
+                                {showPassword ? (
+                                    <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                                ) : (
+                                    <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                                )}
+                            </span>
+                        </div>
                     </div>
                     <div>
                         <Label htmlFor="displayName">Display Name</Label>

@@ -39,6 +39,7 @@ export type UpdateUserRequest = {
   email: string;
   roles: string[];
   statusId?: number;
+  password?: string;
 };
 
 export const updateUser = async (id: string, body: UpdateUserRequest) => {
