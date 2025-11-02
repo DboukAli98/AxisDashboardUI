@@ -124,6 +124,20 @@ const AppSidebar: React.FC = () => {
       ];
     }
 
+    // Admin F&B: limited menu for food & beverage operations
+    if (hasRole("admin_fnb")) {
+      return [
+        {
+          icon: <BoxCubeIcon />,
+          name: "F&B Management",
+          subItems: [
+            { name: "Items", path: "/admin-fnb/items" },
+            { name: "Orders", path: "/admin-fnb/orders" },
+          ],
+        },
+      ];
+    }
+
     // GameCashie: limited menu for game cashier operations
     if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier") || hasRole("cashiergame")) {
       return [
