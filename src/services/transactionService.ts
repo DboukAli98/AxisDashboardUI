@@ -184,6 +184,29 @@ export async function getDailySales(query: DailySalesQuery = {}) {
   return res;
 }
 
+export type PeriodTotalsDto = {
+  totalAmount: number;
+  ordersCount: number;
+};
+
+export type TotalSalesQuery = {
+  from?: string; // date-time format
+  to?: string; // date-time format
+  categoryIds?: string; // comma-separated category IDs, e.g., "8,5"
+};
+
+export async function getTotalSales(query: TotalSalesQuery = {}) {
+  const params: Record<string, unknown> = {};
+  if (query.from) params.from = query.from;
+  if (query.to) params.to = query.to;
+  if (query.categoryIds) params.categoryIds = query.categoryIds;
+
+  const res = await get<PeriodTotalsDto>("/TransactionsReports/total-sales", {
+    params,
+  });
+  return res;
+}
+
 export type TransactionUpdateDto = {
   roomId?: number | null;
   gameTypeId?: number | null;
@@ -211,6 +234,7 @@ export default {
   getItemTransactions,
   getGameTransactions,
   getDailySales,
+  getTotalSales,
   updateTransaction,
   deleteTransaction,
 };
