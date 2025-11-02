@@ -46,9 +46,6 @@ const GameSession: React.FC = () => {
     const [loadingInvoices, setLoadingInvoices] = useState(false);
     const [showInvoicesSection, setShowInvoicesSection] = useState(false);
     const [totalInvoices, setTotalInvoices] = useState<number>(0);
-    const [dateFilter, setDateFilter] = useState<'all' | 'today' | '3days' | 'week' | 'month' | 'custom'>('all');
-    const [customFromDate, setCustomFromDate] = useState<string>('');
-    const [customToDate, setCustomToDate] = useState<string>('');
 
     useEffect(() => {
         let mounted = true;
@@ -136,65 +133,17 @@ const GameSession: React.FC = () => {
         return map;
     }, [settings]);
 
-    // Load user's invoices
+    // Load user's invoices (last 24 hours only)
     useEffect(() => {
         if (!showInvoicesSection || !claims?.name) return;
         let mounted = true;
         setLoadingInvoices(true);
 
-        // Calculate date range based on filter
-        let fromDate: string | undefined;
-        let toDate: string | undefined;
+        // Get transactions from last 24 hours
         const now = new Date();
-
-        switch (dateFilter) {
-            case 'custom': {
-                if (customFromDate) {
-                    // datetime-local format is "YYYY-MM-DDTHH:mm", convert directly to ISO
-                    fromDate = new Date(customFromDate).toISOString();
-                }
-                if (customToDate) {
-                    // datetime-local format is "YYYY-MM-DDTHH:mm", convert directly to ISO
-                    toDate = new Date(customToDate).toISOString();
-                } else if (customFromDate) {
-                    // If only from date is set, use current time as to date
-                    toDate = new Date().toISOString();
-                }
-                break;
-            }
-            case 'today': {
-                const today = new Date();
-                fromDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0)).toISOString();
-                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
-                break;
-            }
-            case '3days': {
-                const threeDaysAgo = new Date(now);
-                threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-                fromDate = new Date(Date.UTC(threeDaysAgo.getUTCFullYear(), threeDaysAgo.getUTCMonth(), threeDaysAgo.getUTCDate(), 0, 0, 0, 0)).toISOString();
-                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
-                break;
-            }
-            case 'week': {
-                const weekAgo = new Date(now);
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                fromDate = new Date(Date.UTC(weekAgo.getUTCFullYear(), weekAgo.getUTCMonth(), weekAgo.getUTCDate(), 0, 0, 0, 0)).toISOString();
-                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
-                break;
-            }
-            case 'month': {
-                const monthAgo = new Date(now);
-                monthAgo.setMonth(monthAgo.getMonth() - 1);
-                fromDate = new Date(Date.UTC(monthAgo.getUTCFullYear(), monthAgo.getUTCMonth(), monthAgo.getUTCDate(), 0, 0, 0, 0)).toISOString();
-                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
-                break;
-            }
-            case 'all':
-            default:
-                fromDate = undefined;
-                toDate = undefined;
-                break;
-        }
+        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const fromDate = twentyFourHoursAgo.toISOString();
+        const toDate = now.toISOString();
 
         getGameTransactions({
             CreatedBy: [claims.name],
@@ -210,7 +159,7 @@ const GameSession: React.FC = () => {
             .catch(() => { /* ignore */ })
             .finally(() => { if (mounted) setLoadingInvoices(false); });
         return () => { mounted = false; };
-    }, [showInvoicesSection, claims?.name, dateFilter, customFromDate, customToDate]);
+    }, [showInvoicesSection, claims?.name]);
 
     return (
         <div className="p-6">
@@ -486,61 +435,15 @@ const GameSession: React.FC = () => {
 
                 {showInvoicesSection && (
                     <div className="space-y-4">
-                        {/* Date Filter Buttons */}
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <div className="flex items-center gap-2 flex-wrap mb-4">
-                                <span className="text-sm font-medium text-gray-700 mr-2">Filter by:</span>
-                                {[
-                                    { value: 'all', label: 'All Time' },
-                                    { value: 'today', label: 'Today' },
-                                    { value: '3days', label: 'Last 3 Days' },
-                                    { value: 'week', label: 'Last Week' },
-                                    { value: 'month', label: 'Last Month' },
-                                    { value: 'custom', label: 'Custom Range' },
-                                ].map((filter) => (
-                                    <button
-                                        key={filter.value}
-                                        onClick={() => setDateFilter(filter.value as typeof dateFilter)}
-                                        className={`px-3 py-1.5 rounded text-sm font-medium transition ${dateFilter === filter.value
-                                                ? 'bg-purple-600 text-white'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        {filter.label}
-                                    </button>
-                                ))}
+                        {/* Info Banner */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                            <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-blue-900">Displaying Recent Invoices</p>
+                                <p className="text-sm text-blue-700 mt-1">Showing all invoices from the last 24 hours until now.</p>
                             </div>
-
-                            {/* Custom Date Range Inputs */}
-                            {dateFilter === 'custom' && (
-                                <div className="border-t pt-4 mt-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <Label>From Date & Time</Label>
-                                            <Input
-                                                type="datetime-local"
-                                                value={customFromDate}
-                                                onChange={(e) => setCustomFromDate(e.target.value)}
-                                                className="w-full"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label>To Date & Time</Label>
-                                            <Input
-                                                type="datetime-local"
-                                                value={customToDate}
-                                                onChange={(e) => setCustomToDate(e.target.value)}
-                                                className="w-full"
-                                            />
-                                        </div>
-                                    </div>
-                                    {customFromDate && customToDate && new Date(customFromDate) > new Date(customToDate) && (
-                                        <div className="mt-2 text-sm text-red-600">
-                                            From date & time must be before or equal to To date & time
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
 
                         {/* Total Fees Widget */}
@@ -549,18 +452,7 @@ const GameSession: React.FC = () => {
                                 <div>
                                     <p className="text-sm font-medium opacity-90">Total Fees</p>
                                     <p className="text-3xl font-bold mt-1">${totalInvoices.toFixed(2)}</p>
-                                    <p className="text-xs opacity-75 mt-1">
-                                        {dateFilter === 'all' ? 'All time' :
-                                            dateFilter === 'today' ? 'Today' :
-                                                dateFilter === '3days' ? 'Last 3 days' :
-                                                    dateFilter === 'week' ? 'Last week' :
-                                                        dateFilter === 'month' ? 'Last month' :
-                                                            dateFilter === 'custom' && customFromDate && customToDate
-                                                                ? `${new Date(customFromDate).toLocaleString()} - ${new Date(customToDate).toLocaleString()}`
-                                                                : dateFilter === 'custom' && customFromDate
-                                                                    ? `From ${new Date(customFromDate).toLocaleString()}`
-                                                                    : 'Custom range'}
-                                    </p>
+                                    <p className="text-xs opacity-75 mt-1">Last 24 hours</p>
                                 </div>
                                 <div className="bg-white/20 rounded-full p-4">
                                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
