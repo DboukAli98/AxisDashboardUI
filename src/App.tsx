@@ -36,6 +36,9 @@ import CashierItems from './pages/Cashier/Items';
 import CashierOrders from './pages/Cashier/Orders';
 import GameSession from "./pages/Cashier/GameSession";
 import Menu from "./pages/Menu";
+import AdminFnBDashboard from './pages/AdminFnB/Dashboard';
+import AdminFnBItems from './pages/AdminFnB/Items';
+import AdminFnBOrders from './pages/AdminFnB/Orders';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -68,6 +71,14 @@ const GameCashieRoute: React.FC<{ children: React.ReactElement }> = ({ children 
   return children;
 };
 
+const AdminFnBRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { hasRole, loading, authenticated } = useAuth();
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!authenticated) return <Navigate to="/signin" replace />;
+  if (!hasRole("admin_fnb")) return <Navigate to="/" replace />;
+  return children;
+};
+
 export default function App() {
   // Role-based home element: redirect non-admin operational roles away from dashboard
   const RoleHome: React.FC = () => {
@@ -77,6 +88,9 @@ export default function App() {
     }
     if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier") || hasRole("cashiergame")) {
       return <Navigate to="/game/sessions" replace />;
+    }
+    if (hasRole("admin_fnb")) {
+      return <Navigate to="/admin-fnb/dashboard" replace />;
     }
     return <Home />;
   };
@@ -131,8 +145,13 @@ export default function App() {
               <Route path="/admin/game-transactions" element={<AdminRoute><GameTransactions /></AdminRoute>} />
               <Route path="/admin/rooms" element={<AdminRoute><Rooms /></AdminRoute>} />
               <Route path="/admin/categories" element={<AdminRoute><CategoryManagement /></AdminRoute>} />
-              {/* GameCashie routes (non-admin paths) */}
 
+              {/* Admin F&B routes */}
+              <Route path="/admin-fnb/dashboard" element={<AdminFnBRoute><AdminFnBDashboard /></AdminFnBRoute>} />
+              <Route path="/admin-fnb/items" element={<AdminFnBRoute><AdminFnBItems /></AdminFnBRoute>} />
+              <Route path="/admin-fnb/orders" element={<AdminFnBRoute><AdminFnBOrders /></AdminFnBRoute>} />
+
+              {/* GameCashie routes (non-admin paths) */}
               <Route path="/game/sessions" element={<GameCashieRoute><GameSession /></GameCashieRoute>} />
               <Route path="/gamecashier/rooms" element={<GameCashieRoute><GameCashierRooms /></GameCashieRoute>} />
               {/* Make Cashier Items also available to game cashier roles */}

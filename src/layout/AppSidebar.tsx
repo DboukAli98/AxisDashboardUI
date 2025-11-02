@@ -128,6 +128,11 @@ const AppSidebar: React.FC = () => {
     if (hasRole("admin_fnb")) {
       return [
         {
+          icon: <GridIcon />,
+          name: "Dashboard",
+          path: "/admin-fnb/dashboard",
+        },
+        {
           icon: <BoxCubeIcon />,
           name: "F&B Management",
           subItems: [
