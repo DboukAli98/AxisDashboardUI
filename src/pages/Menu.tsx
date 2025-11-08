@@ -145,11 +145,13 @@ export default function Menu() {
                 <div className="absolute inset-0 bg-black opacity-40"></div>
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
                     <div className="text-center">
-                        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-4 tracking-tight">
+                        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-4 tracking-tight font40">
                             Axis X Brew Verse  <br />
                             Menu
                         </h1>
                         <p className="text-xl text-gray-200 mb-6">
+                            <br />
+                            <br />
                             Fuel up before the next round. <br />
                             No one wins on an empty tank! <br />
                             <br />
