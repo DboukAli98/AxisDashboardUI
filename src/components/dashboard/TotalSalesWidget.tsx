@@ -41,6 +41,9 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
                     ...itemCategories.data.map(c => c.id),
                 ];
                 categoryIds = allCategoryIds.join(',');
+            } else if (categoryType === 'item') {
+                // For F&B admin, use specific category IDs: 1,9,11,12
+                categoryIds = '1,9,11,12';
             } else {
                 // Fetch specific type categories
                 const categories = await getCategoriesByType(categoryType, 1, 100);
