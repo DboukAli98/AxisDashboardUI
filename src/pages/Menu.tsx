@@ -151,11 +151,10 @@ export default function Menu() {
                         </h1>
                         <p className="text-xl text-gray-200 mb-6">
                             <br />
-                            <br />
                             Fuel up before the next round. <br />
                             No one wins on an empty tank! <br />
                             <br />
-                            ▪🔺 ⭕ ❌
+                            ▪🔺⭕ ❌
                         </p>
                         <div className="w-32 h-1.5 mx-auto rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400"></div>
                     </div>
