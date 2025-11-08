@@ -813,3 +813,7 @@ span.flatpickr-weekday,
     font-family: 'Courier New', monospace !important;
   }
 }
+
+.py-16{
+  padding-block : calc(.25rem * 5) !important;
+}
