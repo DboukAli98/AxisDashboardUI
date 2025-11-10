@@ -4,12 +4,12 @@ import {
     createExpense,
     updateExpense,
     deleteExpense,
+    getExpenseCategories,
     ExpenseDto,
     ExpenseCreateDto,
     ExpenseUpdateDto,
     ExpenseCategoryDto,
 } from "../../services/expenseService";
-import { getCategoriesByType } from "../../services/categoryService";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
@@ -108,10 +108,10 @@ export default function Expenses() {
     // Load categories
     useEffect(() => {
         let mounted = true;
-        getCategoriesByType("expense", 1, 100)
-            .then((res) => {
+        getExpenseCategories()
+            .then((data) => {
                 if (!mounted) return;
-                setCategories(res.data || []);
+                setCategories(data || []);
             })
             .catch(() => {
                 /* ignore */

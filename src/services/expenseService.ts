@@ -59,6 +59,11 @@ export type ExpenseCategoryDto = {
   description?: string | null;
 };
 
+export type ExpenseCategoryUpdateDto = {
+  name: string;
+  description?: string | null;
+};
+
 // Get expense by ID
 export async function getExpenseById(id: number): Promise<ExpenseDto> {
   return await get<ExpenseDto>(`/expense/${id}`);
@@ -102,14 +107,27 @@ export async function deleteExpense(id: number): Promise<void> {
   return await del<void>(`/expense/${id}`);
 }
 
-// Get expense categories (assuming similar endpoint structure)
+// Get expense categories
 export async function getExpenseCategories(): Promise<ExpenseCategoryDto[]> {
-  return await get<ExpenseCategoryDto[]>("/expense/categories");
+  return await get<ExpenseCategoryDto[]>("/expensecategory");
 }
 
 // Create expense category
 export async function createExpenseCategory(
   dto: ExpenseCategoryCreateDto
 ): Promise<ExpenseCategoryDto> {
-  return await post<ExpenseCategoryDto>("/expense/categories", dto);
+  return await post<ExpenseCategoryDto>("/expensecategory", dto);
+}
+
+// Update expense category
+export async function updateExpenseCategory(
+  id: number,
+  dto: ExpenseCategoryUpdateDto
+): Promise<ExpenseCategoryDto> {
+  return await put<ExpenseCategoryDto>(`/expensecategory/${id}`, dto);
+}
+
+// Delete expense category
+export async function deleteExpenseCategory(id: number): Promise<void> {
+  return await del<void>(`/expensecategory/${id}`);
 }

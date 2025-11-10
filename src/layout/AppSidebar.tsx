@@ -122,7 +122,14 @@ const AppSidebar: React.FC = () => {
           ],
         },
         { icon: <TableIcon />, name: "Rooms", path: "/admin/rooms" },
-        { icon: <DollarLineIcon />, name: "Expenses", path: "/admin/expenses" },
+        {
+          icon: <DollarLineIcon />,
+          name: "Expenses Management",
+          subItems: [
+            { name: "Expenses", path: "/admin/expenses" },
+            { name: "Categories", path: "/admin/expense-categories" },
+          ],
+        },
       ];
     }
 
