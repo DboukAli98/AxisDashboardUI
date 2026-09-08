@@ -1,5 +1,6 @@
 // Public café menu — live items from the inventory API, grouped by category.
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import PageMeta from "../../components/common/PageMeta";
 import { getItems, ItemDto } from "../../services/itemService";
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
@@ -31,8 +32,13 @@ function resolveImageUrl(path?: string | null): string {
   }
 }
 
+/** Till-only categories that must never appear on the public menu. */
+const HIDDEN_CATEGORY = /^\s*(add[\s-]?ons?|extras?|toppings?|sauces?\s*\(add[\s-]?on\))\s*$/i;
+const isHiddenCategory = (cat: CategoryDto | undefined) => !!cat && HIDDEN_CATEGORY.test(cat.name || "");
+
 function matchesType(cat: CategoryDto | undefined, type: ItemType): boolean {
   if (!cat) return false;
+  if (isHiddenCategory(cat)) return false;
   if (type === "Drinks") return cat.itemType === "Bar" || cat.itemType === "Drinks";
   return cat.itemType === type;
 }
@@ -97,7 +103,9 @@ export default function SiteMenu() {
     .map((cat) => ({ id: cat.id, name: cat.name, items: visibleItems.filter((it) => it.categoryId === cat.id) }))
     .filter((s) => s.items.length > 0);
   const uncategorized = visibleItems.filter(
-    (it) => it.categoryId === null || !typeCategories.some((c) => c.id === it.categoryId)
+    (it) =>
+      !isHiddenCategory(categories.find((c) => c.id === it.categoryId)) &&
+      (it.categoryId === null || !typeCategories.some((c) => c.id === it.categoryId))
   );
 
   const pickType = (type: ItemType) => {
@@ -154,8 +162,8 @@ export default function SiteMenu() {
     const inStock = item.quantity > 0;
     const addOns = (item.addOns ?? []).filter((a) => a.isActive !== false);
     const cat = categories.find((c) => c.id === item.categoryId);
-    return (
-      <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true">
+    return createPortal(
+      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true">
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setOpenItem(null)} />
         <div className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-[#0e1a2a] text-white rounded-t-3xl sm:rounded-3xl border border-white/15 shadow-2xl animate-[slideUp_.25s_ease-out]">
           <div className="relative aspect-[16/10] sm:aspect-[16/9]">
@@ -224,7 +232,8 @@ export default function SiteMenu() {
           </div>
         </div>
         <style>{`@keyframes slideUp{from{transform:translateY(24px);opacity:.6}to{transform:translateY(0);opacity:1}}`}</style>
-      </div>
+      </div>,
+      document.body
     );
   };
 
