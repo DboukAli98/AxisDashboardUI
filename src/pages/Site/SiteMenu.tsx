@@ -19,7 +19,7 @@ const TYPE_TABS: Array<{ type: ItemType; label: string }> = [
 
 const ACTIVE = "bg-gradient-to-r from-[#6a99cb] to-[#87b2dd] text-[#071018] shadow-2xl shadow-[#87b2dd]/45";
 const INACTIVE = "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20";
-const GRID = "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4";
+const GRID = "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4";
 
 function resolveImageUrl(path?: string | null): string {
   if (!path) return IMAGES.placeholder;
@@ -44,6 +44,19 @@ export default function SiteMenu() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<ItemType>("Food");
   const [loading, setLoading] = useState(true);
+  // Tapped item → detail sheet (description, add-ons, price). Add-ons are
+  // hidden on the cards so the grid stays clean on phones.
+  const [openItem, setOpenItem] = useState<ItemDto | null>(null);
+
+  // Close the sheet with Escape and lock the page scroll behind it.
+  useEffect(() => {
+    if (!openItem) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpenItem(null); };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [openItem]);
 
   useEffect(() => {
     let mounted = true;
@@ -94,49 +107,123 @@ export default function SiteMenu() {
 
   const renderCard = (item: ItemDto) => {
     const inStock = item.quantity > 0;
+    const addOnCount = (item.addOns ?? []).filter((a) => a.isActive !== false).length;
     return (
-      <div
+      <button
+        type="button"
         key={item.id}
-        className="group relative bg-white/10 backdrop-blur-md rounded-xl overflow-hidden hover:bg-white/20 transition-all duration-300 transform hover:scale-105 hover:shadow-xl border border-white/20"
+        onClick={() => setOpenItem(item)}
+        className="group relative text-left bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/15 hover:bg-white/15 hover:border-[#87b2dd]/50 active:scale-[0.98] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#87b2dd]"
       >
-        <div className="absolute top-2 right-2 z-10">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-bold backdrop-blur-sm ${
-              inStock ? "bg-green-500/90 text-white" : "bg-red-500/90 text-white"
-            }`}
-          >
-            {inStock ? "✓" : "✕"}
-          </span>
-        </div>
-        <div className="relative h-32 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
+        <div className="relative aspect-[4/3] overflow-hidden">
           <img
             src={resolveImageUrl(item.imagePath)}
             alt={item.name}
-            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+            loading="lazy"
+            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
             onError={(e) => {
               e.currentTarget.src = IMAGES.placeholder;
             }}
           />
-        </div>
-        <div className="p-3">
-          <div className="mb-2">
-            <h3 className="text-base font-bold text-white mb-1 leading-tight line-clamp-2">{item.name}</h3>
-            <span className="inline-block px-2 py-0.5 bg-[#87b2dd]/25 text-[#d8e8f8] text-xs font-semibold rounded-full mb-2 capitalize">
-              {item.type}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          {!inStock && (
+            <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/90 text-white">
+              Sold out
             </span>
+          )}
+          {addOnCount > 0 && (
+            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/55 text-[#d8e8f8] backdrop-blur-sm">
+              ✚ {addOnCount} extra{addOnCount > 1 ? "s" : ""}
+            </span>
+          )}
+          <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg text-sm font-bold bg-white/95 text-[#071018] shadow">
+            ${item.price.toFixed(2)}
+          </span>
+        </div>
+        <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+          <h3 className="text-sm sm:text-base font-bold text-white leading-tight line-clamp-2">{item.name}</h3>
+          <span className="shrink-0 text-[#b9d3ee] text-lg leading-none">›</span>
+        </div>
+      </button>
+    );
+  };
+
+  const renderDetail = () => {
+    if (!openItem) return null;
+    const item = openItem;
+    const inStock = item.quantity > 0;
+    const addOns = (item.addOns ?? []).filter((a) => a.isActive !== false);
+    const cat = categories.find((c) => c.id === item.categoryId);
+    return (
+      <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setOpenItem(null)} />
+        <div className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-[#0e1a2a] text-white rounded-t-3xl sm:rounded-3xl border border-white/15 shadow-2xl animate-[slideUp_.25s_ease-out]">
+          <div className="relative aspect-[16/10] sm:aspect-[16/9]">
+            <img
+              src={resolveImageUrl(item.imagePath)}
+              alt={item.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = IMAGES.placeholder;
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0e1a2a] via-transparent to-black/30" />
+            <button
+              type="button"
+              onClick={() => setOpenItem(null)}
+              aria-label="Close"
+              className="absolute top-3 right-3 h-9 w-9 rounded-full bg-black/60 text-white text-lg flex items-center justify-center hover:bg-black/80"
+            >
+              ✕
+            </button>
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 h-1.5 w-12 rounded-full bg-white/50 sm:hidden" />
           </div>
-          <div className="flex items-center justify-between pt-2 border-t border-white/20">
-            <div className="flex items-baseline">
-              <span className="text-xl font-bold text-white">${item.price.toFixed(2)}</span>
+
+          <div className="px-5 pb-6 -mt-6 relative">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                {cat && <div className="text-[11px] uppercase tracking-[0.2em] text-[#b9d3ee] mb-1">{cat.name}</div>}
+                <h3 className="text-2xl font-bold leading-tight">{item.name}</h3>
+              </div>
+              <div className="shrink-0 text-2xl font-bold text-[#b9d3ee]">${item.price.toFixed(2)}</div>
             </div>
-            <div className="w-7 h-7 rounded-full bg-gradient-to-r from-[#6a99cb] to-[#87b2dd] flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-              </svg>
+
+            {item.type && (
+              <p className="mt-3 text-sm text-gray-300 leading-relaxed">{item.type}</p>
+            )}
+
+            <div className="mt-3">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${inStock ? "bg-green-500/15 text-green-300" : "bg-red-500/15 text-red-300"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${inStock ? "bg-green-400" : "bg-red-400"}`} />
+                {inStock ? "Available now" : "Sold out today"}
+              </span>
             </div>
+
+            {addOns.length > 0 && (
+              <div className="mt-5">
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#b9d3ee] mb-2">Make it yours</div>
+                <div className="rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden bg-white/5">
+                  {addOns.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between px-4 py-3">
+                      <span className="text-sm font-medium">{a.name}</span>
+                      <span className="text-sm font-bold text-[#b9d3ee]">+${a.price.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2 text-[11px] text-gray-400">Ask at the counter when you order.</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setOpenItem(null)}
+              className="mt-6 w-full h-12 rounded-2xl font-bold text-[#071018] bg-gradient-to-r from-[#6a99cb] to-[#87b2dd] active:scale-[0.98] transition"
+            >
+              Back to menu
+            </button>
           </div>
         </div>
+        <style>{`@keyframes slideUp{from{transform:translateY(24px);opacity:.6}to{transform:translateY(0);opacity:1}}`}</style>
       </div>
     );
   };
@@ -178,43 +265,48 @@ export default function SiteMenu() {
       <ScrollCue />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Type tabs */}
-        <div className="flex justify-center gap-4 mb-8 flex-wrap">
-          {TYPE_TABS.map((tab) => (
-            <button
-              key={tab.type}
-              onClick={() => pickType(tab.type)}
-              className={`px-8 sm:px-12 py-4 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 transform hover:scale-105 ${
-                selectedType === tab.type ? ACTIVE : INACTIVE
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* Type tabs — one swipeable row on phones, centered on desktop */}
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 mb-4 sm:mb-8 overflow-x-auto no-scrollbar">
+          <div className="flex sm:justify-center gap-2 sm:gap-4 w-max sm:w-auto mx-auto">
+            {TYPE_TABS.map((tab) => (
+              <button
+                key={tab.type}
+                onClick={() => pickType(tab.type)}
+                className={`shrink-0 px-5 sm:px-12 py-3 sm:py-4 rounded-2xl font-bold text-sm sm:text-lg transition-all duration-300 sm:hover:scale-105 ${
+                  selectedType === tab.type ? ACTIVE : INACTIVE
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Category pills */}
-        <div className="flex justify-center gap-2 sm:gap-3 mb-12 flex-wrap">
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className={`px-4 sm:px-8 py-3 rounded-full font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 ${
-              selectedCategory === null ? ACTIVE : INACTIVE
-            }`}
-          >
-            All {selectedType}
-          </button>
-          {typeCategories.map((cat) => (
+        {/* Category pills — sticky so you can jump categories without scrolling back up */}
+        <div className="sticky top-[72px] sm:top-20 z-20 -mx-4 px-4 sm:mx-0 sm:px-0 py-2 mb-6 sm:mb-12 bg-[#0a1220]/85 backdrop-blur-md overflow-x-auto no-scrollbar">
+          <div className="flex sm:justify-center sm:flex-wrap gap-2 sm:gap-3 w-max sm:w-auto mx-auto">
             <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 sm:px-8 py-3 rounded-full font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 ${
-                selectedCategory === cat.id ? ACTIVE : INACTIVE
+              onClick={() => setSelectedCategory(null)}
+              className={`shrink-0 px-4 sm:px-8 py-2 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all duration-300 sm:hover:scale-105 ${
+                selectedCategory === null ? ACTIVE : INACTIVE
               }`}
             >
-              {cat.name}
+              All {selectedType}
             </button>
-          ))}
+            {typeCategories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`shrink-0 px-4 sm:px-8 py-2 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all duration-300 sm:hover:scale-105 ${
+                  selectedCategory === cat.id ? ACTIVE : INACTIVE
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
         </div>
+        <style>{`.no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{scrollbar-width:none}`}</style>
 
         <ScrollCue />
 
@@ -227,10 +319,10 @@ export default function SiteMenu() {
 
         {!loading &&
           (selectedCategory === null ? (
-            <div className="space-y-10">
+            <div className="space-y-8 sm:space-y-10">
               {sections.map((sec) => (
                 <section key={sec.id}>
-                  <h2 className="text-2xl font-bold text-white mb-4">{sec.name}</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">{sec.name}</h2>
                   <div className={GRID}>{sec.items.map(renderCard)}</div>
                 </section>
               ))}
@@ -244,6 +336,8 @@ export default function SiteMenu() {
           ) : (
             <div className={GRID}>{visibleItems.map(renderCard)}</div>
           ))}
+
+        {renderDetail()}
 
         {nothingToShow && (
           <div className="text-center py-20">
