@@ -14,6 +14,7 @@ import Input from "../../components/form/input/InputField";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import PaymentChoiceModal from '../../components/wallet/PaymentChoiceModal';
+import ItemAddOnsPanel from '../../components/items/ItemAddOnsPanel';
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import StatusToggle from '../../components/ui/StatusToggle';
 import { STATUS_ENABLED, getStatusName, STATUS_PROCESSED_PAID } from '../../services/statuses';
@@ -46,7 +47,6 @@ export default function CashierItems() {
     // Chosen paid extras per item: itemId -> addOnId -> qty. Rides the order
     // request and shows as sublines on the receipt.
     const [selectedAddOns, setSelectedAddOns] = useState<Record<string, Record<number, number>>>({});
-    const [customizeItem, setCustomizeItem] = useState<ItemDto | null>(null);
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -712,21 +712,23 @@ export default function CashierItems() {
                                             >+</button>
                                         </div>
 
-                                        {/* Customize — only items that offer add-ons */}
+                                        {/* Add-ons live on the card — tap to expand, pick right here */}
                                         {(it.addOns?.length ?? 0) > 0 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setCustomizeItem(it)}
-                                                className={`mt-2 w-full text-xs font-medium rounded-lg py-1.5 transition ${
-                                                    Object.values(selectedAddOns[String(it.id)] ?? {}).some(q => q > 0)
-                                                        ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                                                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                                                }`}
-                                            >
-                                                {Object.values(selectedAddOns[String(it.id)] ?? {}).some(q => q > 0)
-                                                    ? `⚙ Customized (${Object.values(selectedAddOns[String(it.id)] ?? {}).reduce((a, b) => a + b, 0)})`
-                                                    : '⚙ Customize'}
-                                            </button>
+                                            <ItemAddOnsPanel
+                                                addOns={it.addOns!}
+                                                picks={selectedAddOns[String(it.id)] ?? {}}
+                                                onChange={(next) => setSelectedAddOns((prev) => {
+                                                    const key = String(it.id);
+                                                    const copy = { ...prev };
+                                                    if (Object.keys(next).length === 0) delete copy[key]; else copy[key] = next;
+                                                    return copy;
+                                                })}
+                                                onFirstPick={() => {
+                                                    // Picking an extra implies they want the item.
+                                                    const key = String(it.id);
+                                                    if (!(selectedItems[key] > 0)) setSelectedItems(s => ({ ...s, [key]: 1 }));
+                                                }}
+                                            />
                                         )}
                                     </div>
                                 </div>
@@ -1331,56 +1333,6 @@ export default function CashierItems() {
                 onClose={() => setCalculatorOpen(false)}
                 totalAmount={orderTotal}
             />
-
-            {/* Customize sheet — pick paid extras for one item */}
-            {customizeItem && (
-                <Modal isOpen onClose={() => setCustomizeItem(null)} title={`Customize — ${customizeItem.name}`}>
-                    <div className="space-y-2">
-                        <p className="text-xs text-gray-500">
-                            Extras are charged <b>as picked</b> — e.g. 2 lattes with 1x Oat Milk
-                            adds one Oat Milk to the bill. Pick 2 if both drinks need it.
-                        </p>
-                        {(customizeItem.addOns ?? []).map((a) => {
-                            const key = String(customizeItem.id);
-                            const qty = selectedAddOns[key]?.[a.id] ?? 0;
-                            const setQty = (next: number) => setSelectedAddOns((prev) => {
-                                const perItem = { ...(prev[key] ?? {}) };
-                                if (next <= 0) delete perItem[a.id]; else perItem[a.id] = next;
-                                const copy = { ...prev };
-                                if (Object.keys(perItem).length === 0) delete copy[key]; else copy[key] = perItem;
-                                return copy;
-                            });
-                            return (
-                                <div key={a.id} className={`flex items-center justify-between rounded-xl border px-3 py-2.5 ${qty > 0 ? 'border-indigo-300 bg-indigo-50/50' : 'border-gray-200'}`}>
-                                    <div>
-                                        <div className="text-sm font-medium text-gray-900">{a.name}</div>
-                                        <div className="text-xs text-gray-500">+${a.price.toFixed(2)}</div>
-                                    </div>
-                                    <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
-                                        <button type="button" className="h-8 w-9 bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-40" disabled={qty === 0} onClick={() => setQty(qty - 1)}>−</button>
-                                        <div className={`h-8 w-9 flex items-center justify-center text-sm font-bold ${qty > 0 ? 'text-indigo-700 bg-indigo-50' : 'text-gray-400'}`}>{qty}</div>
-                                        <button type="button" className="h-8 w-9 bg-indigo-600 text-white hover:bg-indigo-700" onClick={() => setQty(qty + 1)}>+</button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                // Customizing implies they want the item — add one if none picked yet.
-                                const key = String(customizeItem.id);
-                                if (!(selectedItems[key] > 0) && Object.values(selectedAddOns[key] ?? {}).some(q => q > 0)) {
-                                    setSelectedItems(s => ({ ...s, [key]: 1 }));
-                                }
-                                setCustomizeItem(null);
-                            }}
-                            className="w-full h-10 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
-                        >
-                            Done
-                        </button>
-                    </div>
-                </Modal>
-            )}
 
             {/* Payment picker — cash / wallet / mixed, shown for Pay Now when
                 a client is attached */}

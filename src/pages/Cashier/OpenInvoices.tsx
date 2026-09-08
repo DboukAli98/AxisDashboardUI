@@ -19,6 +19,7 @@ import { getSets, SetDto } from '../../services/setService';
 import { getDiscounts, DiscountDto } from '../../services/discountService';
 import AttachClientModal from '../GameCashier/AttachClientModal';
 import PaymentChoiceModal from '../../components/wallet/PaymentChoiceModal';
+import ItemAddOnsPanel, { addOnsTotal } from '../../components/items/ItemAddOnsPanel';
 
 const OpenInvoices: React.FC = () => {
     const [editingSetInvoiceId, setEditingSetInvoiceId] = useState<number | null>(null);
@@ -63,6 +64,8 @@ const [, setLoadingSets] = useState(false);
 
     // Selected items for adding to invoice
     const [selectedItems, setSelectedItems] = useState<Record<string, number>>({});
+    // Paid extras per item: itemId -> addOnId -> qty. Sent with the add-items call.
+    const [selectedAddOns, setSelectedAddOns] = useState<Record<string, Record<number, number>>>({});
 
     // Modal states
     const [isAddItemsModalOpen, setIsAddItemsModalOpen] = useState(false);
@@ -388,6 +391,11 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
             .map(([itemId, q]) => ({
                 itemId: parseInt(itemId), // keep as string
                 quantity: q,
+                addOns: selectedAddOns[itemId]
+                    ? Object.entries(selectedAddOns[itemId])
+                        .filter(([, aq]) => aq > 0)
+                        .map(([addOnId, aq]) => ({ addOnId: Number(addOnId), quantity: aq }))
+                    : undefined,
             }));
 
         if (orderItems.length === 0) {
@@ -414,7 +422,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                 });
 
                 // Reset and close modal
-                setSelectedItems({});
+                setSelectedItems({}); setSelectedAddOns({});
                 setSelectedInvoice(null);
                 setIsAddItemsModalOpen(false);
                 setPage(1);
@@ -465,7 +473,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
         .reduce((sum, [itemId, qty]) => {
             const item = itemLookup[String(itemId)];
             if (!item) return sum;
-            return sum + item.price * qty;
+            return sum + item.price * qty + addOnsTotal(item.addOns, selectedAddOns[String(itemId)]);
         }, 0);
 
     const selectedItemsCount = Object.values(selectedItems).reduce(
@@ -870,7 +878,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                 onClose={() => {
                     setIsAddItemsModalOpen(false);
                     setSelectedInvoice(null);
-                    setSelectedItems({});
+                    setSelectedItems({}); setSelectedAddOns({});
                     setPage(1);
                     setSearch('');
                     setSelectedCategory(null);
@@ -920,7 +928,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => setSelectedItems({})}
+                                    onClick={() => { setSelectedItems({}); setSelectedAddOns({}); }}
                                     className="text-sm text-blue-600 hover:text-blue-800"
                                 >
                                     Clear All
@@ -998,7 +1006,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                                 <button
                                                     className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                                                     disabled={selected === 0}
-                                                    onClick={() =>
+                                                    onClick={() => {
                                                         setSelectedItems((s) => {
                                                             const key = String(item.id);
                                                             const cur = s[key] || 0;
@@ -1007,8 +1015,11 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                                             if (next === 0) delete copy[key];
                                                             else copy[key] = next;
                                                             return copy;
-                                                        })
-                                                    }
+                                                        });
+                                                        if ((selectedItems[String(item.id)] || 0) <= 1) {
+                                                            setSelectedAddOns((a) => { const c = { ...a }; delete c[String(item.id)]; return c; });
+                                                        }
+                                                    }}
                                                 >
                                                     -
                                                 </button>
@@ -1028,6 +1039,22 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                                     +
                                                 </button>
                                             </div>
+                                            {(item.addOns?.length ?? 0) > 0 && (
+                                                <ItemAddOnsPanel
+                                                    addOns={item.addOns!}
+                                                    picks={selectedAddOns[String(item.id)] ?? {}}
+                                                    onChange={(next) => setSelectedAddOns((prev) => {
+                                                        const key = String(item.id);
+                                                        const copy = { ...prev };
+                                                        if (Object.keys(next).length === 0) delete copy[key]; else copy[key] = next;
+                                                        return copy;
+                                                    })}
+                                                    onFirstPick={() => {
+                                                        const key = String(item.id);
+                                                        if (!(selectedItems[key] > 0)) setSelectedItems((s) => ({ ...s, [key]: 1 }));
+                                                    }}
+                                                />
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -1065,7 +1092,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                             onClick={() => {
                                 setIsAddItemsModalOpen(false);
                                 setSelectedInvoice(null);
-                                setSelectedItems({});
+                                setSelectedItems({}); setSelectedAddOns({});
                                 setPage(1);
                                 setSearch('');
                                 setSelectedCategory(null);
