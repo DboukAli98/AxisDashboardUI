@@ -293,11 +293,16 @@ export type DailySalesData = {
     itemsTotal: number;
     gamesTotal: number;
     grandTotal: number;
+    eventsTotal?: number;
 };
 
 export type PeriodTotalsDto = {
     totalAmount: number;
     ordersCount: number;
+    // Paid event tickets folded into totalAmount / ordersCount.
+    eventsAmount?: number;
+    eventsCount?: number;
+    salesAmount?: number;
 };
 
 export type TotalSalesQuery = {

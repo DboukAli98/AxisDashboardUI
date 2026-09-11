@@ -28,7 +28,39 @@ const GROUPS: { title: string; subtitle: string; keys: string[] }[] = [
     subtitle: "Toggle the Hangfire jobs that propose actions on their own.",
     keys: ["AiMonitor.OccupancyEnabled", "AiMonitor.PatternsEnabled", "AiMonitor.OccupancyThresholdPct"],
   },
+  {
+    title: "MontyPay (online card payments)",
+    subtitle: "Hosted checkout for event tickets, wallet top-ups, invoices and pay links. Keep sandbox and production side by side; the switch below picks the live one.",
+    keys: [
+      "MontyPay.Environment",
+      "MontyPay.Sandbox.CheckoutUrl", "MontyPay.Sandbox.MerchantKey", "MontyPay.Sandbox.Password",
+      "MontyPay.Production.CheckoutUrl", "MontyPay.Production.MerchantKey", "MontyPay.Production.Password",
+      "MontyPay.HashAlgorithm", "MontyPay.SendNotificationUrl",
+      "Payments.PublicBaseUrl", "Payments.ApiBaseUrl",
+    ],
+  },
+  {
+    title: "Whish Collect (e-wallet)",
+    subtitle: "Whish Money merchant credentials for event tickets.",
+    keys: ["Whish.Channel", "Whish.Secret", "Whish.WebsiteUrl", "Whish.BaseUrl", "Event.PublicBaseUrl", "Event.WhatsAppNumber"],
+  },
 ];
+
+// Keys the UI knows about even before the SQL seed ran — shown as "not set"
+// so the admin can fill them in (upsert creates the row).
+const KNOWN_DESCRIPTIONS: Record<string, string> = {
+  "MontyPay.Environment": "sandbox or production — which credentials are live",
+  "MontyPay.Sandbox.CheckoutUrl": "Sandbox CHECKOUT_URL from your MontyPay account manager",
+  "MontyPay.Sandbox.MerchantKey": "Sandbox merchant key (Test key)",
+  "MontyPay.Sandbox.Password": "Sandbox merchant password (used only to sign requests)",
+  "MontyPay.Production.CheckoutUrl": "Production CHECKOUT_URL",
+  "MontyPay.Production.MerchantKey": "Production merchant key",
+  "MontyPay.Production.Password": "Production merchant password",
+  "MontyPay.HashAlgorithm": "md5 (default) or sha256 — must match your MontyPay protocol mapping",
+  "MontyPay.SendNotificationUrl": "true = send our callback URL with every session; false = rely on the URL set in MontyPay's panel",
+  "Payments.PublicBaseUrl": "Website base for pay links (falls back to Event.PublicBaseUrl)",
+  "Payments.ApiBaseUrl": "Public API base for callbacks (auto-detected when empty)",
+};
 
 function SettingRow({ s, onChange }: { s: IntegrationSetting; onChange: () => void }) {
   const [editing, setEditing] = useState(false);
@@ -131,13 +163,27 @@ export default function IntegrationsPage() {
   };
 
   const byKey = new Map(settings.map(s => [s.key, s]));
+  // Placeholder row for a known key that has no DB row yet.
+  const rowFor = (k: string): IntegrationSetting | undefined =>
+    byKey.get(k) ?? (KNOWN_DESCRIPTIONS[k]
+      ? { id: 0, key: k, value: null, isSecret: /password|secret|key$/i.test(k) && !/MerchantKey/.test(k), isSet: false, description: KNOWN_DESCRIPTIONS[k], updatedBy: null, updatedOn: "" }
+      : undefined);
+
+  const montyEnv = byKey.get("MontyPay.Environment")?.value ?? "sandbox";
+  const [switching, setSwitching] = useState(false);
+  const switchEnv = async (env: "sandbox" | "production") => {
+    if (env === "production" && !confirm("Switch MontyPay to PRODUCTION? Real cards will be charged from now on.")) return;
+    setSwitching(true);
+    try { await integrationSettingsService.upsert("MontyPay.Environment", env); await reload(); }
+    finally { setSwitching(false); }
+  };
 
   return (
     <div className="p-6 max-w-5xl">
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
         <p className="text-sm text-gray-500 mt-1">
-          API keys for Claude AI and WhatsApp. Secrets are never returned in plaintext — only the last 4 chars are shown.
+          API keys for Claude AI, WhatsApp, MontyPay and Whish. Secrets are never returned in plaintext — only the last 4 chars are shown.
         </p>
       </div>
 
@@ -167,9 +213,29 @@ export default function IntegrationsPage() {
           {(g.title.startsWith("Anthropic") && tests.anthropic) && <TestResult t={tests.anthropic} />}
           {(g.title.startsWith("WhatsApp")  && tests.whatsapp)  && <TestResult t={tests.whatsapp} />}
 
+          {g.title.startsWith("MontyPay") && (
+            <div className={`mx-5 mt-4 rounded-xl border p-4 flex items-center justify-between gap-4 flex-wrap ${montyEnv === "production" ? "border-emerald-300 bg-emerald-50" : "border-amber-300 bg-amber-50"}`}>
+              <div>
+                <div className="text-sm font-semibold text-gray-900">
+                  Environment: <span className={montyEnv === "production" ? "text-emerald-700" : "text-amber-700"}>{montyEnv.toUpperCase()}</span>
+                </div>
+                <div className="text-xs text-gray-600 mt-0.5">
+                  {montyEnv === "production" ? "Real cards are charged." : "Test mode — use card 4111 1111 1111 1111, expiry 01/38, any CVV."}
+                  {" "}Callback URL and status are on <a href="/admin/online-payments" className="text-indigo-600 underline">Online Payments</a>.
+                </div>
+              </div>
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden bg-white">
+                <button disabled={switching} onClick={() => switchEnv("sandbox")}
+                  className={`px-4 h-9 text-xs font-semibold ${montyEnv !== "production" ? "bg-amber-500 text-white" : "text-gray-600 hover:bg-gray-50"}`}>Sandbox</button>
+                <button disabled={switching} onClick={() => switchEnv("production")}
+                  className={`px-4 h-9 text-xs font-semibold ${montyEnv === "production" ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}>Production</button>
+              </div>
+            </div>
+          )}
+
           <div className="px-5">
             {g.keys.map(k => {
-              const s = byKey.get(k);
+              const s = rowFor(k);
               if (!s) return null;
               return <SettingRow key={k} s={s} onChange={reload} />;
             })}

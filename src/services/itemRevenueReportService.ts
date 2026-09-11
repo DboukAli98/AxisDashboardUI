@@ -8,7 +8,14 @@ export type ItemRevenueLineDto = {
     imagePath?: string | null;
     sellPrice: number;
     buyPrice?: number | null;
+    unitCost?: number | null;
+    costSource: "buy" | "recipe" | "none";
+    isRecipe: boolean;
     unitsSold: number;
+    unitsGivenFree: number;
+    grossRevenue: number;
+    discountGiven: number;
+    addOnRevenue: number;
     revenue: number;
     cogs: number;
     grossProfit: number;
@@ -22,8 +29,14 @@ export type ItemRevenueLineDto = {
 export type ItemRevenueCategoryGroupDto = {
     categoryId: number;
     categoryName: string;
+    itemType?: string | null;
+    isTcg: boolean;
     items: ItemRevenueLineDto[];
     totalUnitsSold: number;
+    totalUnitsGivenFree: number;
+    totalGrossRevenue: number;
+    totalDiscount: number;
+    totalAddOnRevenue: number;
     totalRevenue: number;
     totalCogs: number;
     totalGrossProfit: number;
@@ -36,9 +49,15 @@ export type ItemRevenueCategoryGroupDto = {
 export type ItemRevenueReportDto = {
     from?: string | null;
     to?: string | null;
+    generatedAt: string;
+    transactionCount: number;
     filteredCategoryIds: number[];
     categories: ItemRevenueCategoryGroupDto[];
     grandTotalUnitsSold: number;
+    grandTotalUnitsGivenFree: number;
+    grandTotalGrossRevenue: number;
+    grandTotalDiscount: number;
+    grandTotalAddOnRevenue: number;
     grandTotalRevenue: number;
     grandTotalCogs: number;
     grandTotalGrossProfit: number;
@@ -46,13 +65,25 @@ export type ItemRevenueReportDto = {
     grandTotalStockBuyValue: number;
     grandTotalStockSellValue: number;
     grandTotalStockPotentialProfit: number;
+    tcgUnitsSold: number;
     tcgRevenue: number;
     tcgCogs: number;
     tcgGrossProfit: number;
+    tcgMarginPct?: number | null;
     tcgStockBuyValue: number;
     tcgStockSellValue: number;
+    fnbUnitsSold: number;
+    fnbRevenue: number;
+    fnbCogs: number;
+    fnbGrossProfit: number;
+    fnbMarginPct?: number | null;
 };
 
+/**
+ * `from` is inclusive, `to` is EXCLUSIVE — both ISO instants. Send local
+ * midnight boundaries (Date#toISOString of a local-midnight Date) so the
+ * period is the venue's day, not UTC's.
+ */
 export async function getItemRevenueReport(params: {
     from?: string;
     to?: string;

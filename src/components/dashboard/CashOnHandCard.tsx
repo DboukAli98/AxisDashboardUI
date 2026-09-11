@@ -1,254 +1,169 @@
 // CashOnHandCard
 // ==============
-// Rami's spec (2026-07):
-//   cashOnHand = static baseline + revenue in period − operating expenses in period
-// The baseline is a one-shot till reading he types in once; everything after
-// that is adjusted automatically as the app records revenue and expenses.
+// Rami's spec (2026-09):
+//   cashOnHand = baseline + revenue in period − TOTAL expenses in period
+// where TOTAL expenses = operating + capital + other cash-out manual entries
+// (owner draws…) + stock purchases. The number is computed by the server
+// (AccountingDashboardDto.cashOnHand) so every screen shows the same figure.
 //
-// The baseline lives in IntegrationSettings under key
-// `Accounting.CashOnHandBaseline` so it's edit-able from /admin/integrations
-// AND inline via the pencil icon on this card.
+// The baseline is a one-shot till reading the owner types in once; it lives
+// in IntegrationSettings under `Accounting.CashOnHandBaseline` and is
+// editable inline via the pencil icon.
 //
-// This component is reused on:
-//   • Accounting dashboard  → Owner Summary grid, row 1 (full width)
+// Reused on:
+//   • Accounting dashboard  → hero card + Owner Summary row 1
 //   • Main app dashboard    → compact card in row 1
 
 import { useEffect, useState } from "react";
 import { EditOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { Modal, InputNumber, message, Tooltip, Spin } from "antd";
-import { getAccountingDashboard } from "../../services/accountingService";
-import {
-  integrationSettingsService,
-} from "../../services/integrationSettingsService";
+import { getAccountingDashboard, CashOnHandDto } from "../../services/accountingService";
+import { integrationSettingsService } from "../../services/integrationSettingsService";
 
 interface Props {
   fromIso: string;
   toIso: string;
-  // Optional visual mode. "compact" = short single-line for the home
-  // dashboard; "full" = the big row used on the accounting dashboard.
   mode?: "compact" | "full";
-  // Optional pre-fetched revenue + opex so the card doesn't repeat the
-  // network call the parent already made (used by the accounting page).
-  revenueOverride?: number;
-  operatingExpensesOverride?: number;
+  /** Pre-fetched breakdown from the parent's dashboard call (skips a round-trip). */
+  cashOverride?: CashOnHandDto | null;
+  /** Called after the baseline is saved so the parent can refetch. */
+  onBaselineSaved?: () => void;
 }
 
 const money = (n: number) =>
   `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export default function CashOnHandCard({
-  fromIso, toIso, mode = "compact",
-  revenueOverride, operatingExpensesOverride,
-}: Props) {
-  const [baseline, setBaseline]         = useState<number | null>(null);
-  const [revenue, setRevenue]           = useState<number>(revenueOverride ?? 0);
-  const [opEx, setOpEx]                 = useState<number>(operatingExpensesOverride ?? 0);
-  const [loading, setLoading]           = useState(false);
-  const [editing, setEditing]           = useState(false);
-  const [draft, setDraft]               = useState<number | null>(null);
-  const [saving, setSaving]             = useState(false);
+const FORMULA = "Baseline + revenue in period − TOTAL expenses in period (operating + capital + owner draws + stock purchases). Baseline is the till reading you set once.";
 
-  const usingOverrides = revenueOverride != null && operatingExpensesOverride != null;
+export default function CashOnHandCard({ fromIso, toIso, mode = "compact", cashOverride, onBaselineSaved }: Props) {
+  const [data, setData] = useState<CashOnHandDto | null>(cashOverride ?? null);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    // Baseline is fetched from IntegrationSettings — small enough to
-    // re-fetch on every mount without a cache concern.
-    let alive = true;
-    (async () => {
-      try {
-        const list = await integrationSettingsService.list();
-        const row = list.find(x => x.key === "Accounting.CashOnHandBaseline");
-        // Value comes back masked only for isSecret rows — this key isn't,
-        // so we get the raw number as a string.
-        const parsed = Number(row?.value ?? "0");
-        if (alive) setBaseline(isFinite(parsed) ? parsed : 0);
-      } catch { if (alive) setBaseline(0); }
-    })();
-    return () => { alive = false; };
-  }, []);
-
-  useEffect(() => {
-    // If the parent didn't hand us revenue/opex, fetch them ourselves.
-    if (usingOverrides) {
-      setRevenue(revenueOverride!);
-      setOpEx(operatingExpensesOverride!);
-      return;
-    }
+    if (cashOverride !== undefined) { setData(cashOverride ?? null); return; }
     let alive = true;
     setLoading(true);
     getAccountingDashboard(fromIso, toIso)
-      .then(d => {
-        if (!alive) return;
-        setRevenue(d.revenue?.total ?? 0);
-        setOpEx(d.operatingExpenses?.total ?? 0);
-      })
-      .catch(() => { /* soft-fail */ })
+      .then((d) => { if (alive) setData(d.cashOnHand ?? null); })
+      .catch(() => { /* soft-fail: card shows a spinner until the next try */ })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [fromIso, toIso, usingOverrides, revenueOverride, operatingExpensesOverride]);
-
-  const cashOnHand = (baseline ?? 0) + revenue - opEx;
+  }, [fromIso, toIso, cashOverride, reloadKey]);
 
   const saveBaseline = async () => {
     if (draft == null || isNaN(draft)) return;
     setSaving(true);
     try {
-      await integrationSettingsService.upsert(
-        "Accounting.CashOnHandBaseline", String(draft));
-      setBaseline(draft);
+      await integrationSettingsService.upsert("Accounting.CashOnHandBaseline", String(draft));
       message.success("Baseline updated");
       setEditing(false);
-    } catch (e: any) {
-      message.error(e?.response?.data?.message ?? "Save failed");
+      if (cashOverride !== undefined) onBaselineSaved?.();
+      else setReloadKey((k) => k + 1);
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      message.error(msg ?? "Save failed");
     } finally { setSaving(false); }
   };
 
-  const openEdit = () => {
-    setDraft(baseline ?? 0);
-    setEditing(true);
-  };
+  const openEdit = () => { setDraft(data?.baseline ?? 0); setEditing(true); };
+  const isReady = !!data && !loading;
 
-  const isReady = baseline != null && !loading;
+  const breakdown = data
+    ? `baseline ${money(data.baseline)} + revenue ${money(data.revenue)} − expenses ${money(data.totalExpenses)}`
+    : "";
+  const expenseDetail = data
+    ? [
+        data.operatingExpenses > 0 ? `opex ${money(data.operatingExpenses)}` : null,
+        data.capitalExpenses > 0 ? `capital ${money(data.capitalExpenses)}` : null,
+        data.otherCashOut > 0 ? `draws/other ${money(data.otherCashOut)}` : null,
+        data.stockPurchases > 0 ? `stock purchases ${money(data.stockPurchases)}` : null,
+      ].filter(Boolean).join(" · ")
+    : "";
 
-  // ── Rendering ─────────────────────────────────────────────────────
   if (mode === "compact") {
     return (
       <>
-        <div
-          className="rounded-lg border shadow-sm p-4 bg-gradient-to-br from-cyan-50 to-teal-50 border-cyan-200 h-full flex flex-col justify-between"
-        >
+        <div className="rounded-lg border shadow-sm p-4 bg-gradient-to-br from-cyan-50 to-teal-50 border-cyan-200 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-cyan-800 flex items-center gap-1">
               💰 Cash on Hand
-              <Tooltip title="Baseline + revenue in period − operating expenses in period. Baseline is a static till reading edited by admin.">
-                <InfoCircleOutlined className="text-cyan-600 text-[10px]" />
-              </Tooltip>
+              <Tooltip title={FORMULA}><InfoCircleOutlined className="text-cyan-600 text-[10px]" /></Tooltip>
             </div>
-            <button
-              onClick={openEdit}
-              className="text-cyan-700 hover:text-cyan-900 text-xs"
-              title="Edit baseline"
-            >
+            <button onClick={openEdit} className="text-cyan-700 hover:text-cyan-900 text-xs" title="Edit baseline">
               <EditOutlined />
             </button>
           </div>
           {isReady ? (
             <div>
-              <div className="text-2xl font-bold text-cyan-900 leading-tight">{money(cashOnHand)}</div>
-              <div className="text-[10px] text-cyan-700 mt-1">
-                baseline {money(baseline!)} + rev {money(revenue)} − opex {money(opEx)}
-              </div>
+              <div className={`text-2xl font-bold leading-tight ${data!.amount < 0 ? "text-red-700" : "text-cyan-900"}`}>{money(data!.amount)}</div>
+              <div className="text-[10px] text-cyan-700 mt-1">{breakdown}</div>
+              {expenseDetail && <div className="text-[10px] text-cyan-600/80">{expenseDetail}</div>}
             </div>
           ) : (
             <div className="flex justify-center py-2"><Spin size="small" /></div>
           )}
         </div>
-        <BaselineModal
-          open={editing}
-          draft={draft}
-          setDraft={setDraft}
-          onCancel={() => setEditing(false)}
-          onSave={saveBaseline}
-          saving={saving}
-        />
+        <BaselineModal open={editing} draft={draft} setDraft={setDraft} onCancel={() => setEditing(false)} onSave={saveBaseline} saving={saving} />
       </>
     );
   }
 
-  // Full mode — used inside the OwnerSummaryGrid row 1.
   return (
     <>
       <div
         style={{
-          background: "#CFFAFE",
-          border: "1px solid #67E8F9",
-          color: "#155E75",
-          padding: "12px 16px",
-          borderRadius: 8,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          minHeight: 70,
+          background: "#CFFAFE", border: "1px solid #67E8F9", color: "#155E75",
+          padding: "12px 16px", borderRadius: 8, display: "flex", alignItems: "center",
+          justifyContent: "space-between", gap: 12, minHeight: 70,
         }}
       >
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.85, display: "flex", alignItems: "center", gap: 6 }}>
             1 · Axis Account (Cash on Hand)
-            <Tooltip title="Baseline + revenue in period − operating expenses in period. Baseline is a static till reading edited by admin.">
-              <InfoCircleOutlined style={{ fontSize: 11, opacity: 0.6 }} />
-            </Tooltip>
-            <button
-              onClick={openEdit}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "#155E75", opacity: 0.7, fontSize: 12 }}
-              title="Edit baseline"
-            >
+            <Tooltip title={FORMULA}><InfoCircleOutlined style={{ fontSize: 11, opacity: 0.6 }} /></Tooltip>
+            <button onClick={openEdit} style={{ background: "none", border: "none", cursor: "pointer", color: "#155E75", opacity: 0.7, fontSize: 12 }} title="Edit baseline">
               <EditOutlined />
             </button>
           </div>
           {isReady ? (
             <>
-              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, marginTop: 2 }}>
-                {money(cashOnHand)}
+              <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, marginTop: 2, color: data!.amount < 0 ? "#B91C1C" : undefined }}>
+                {money(data!.amount)}
               </div>
-              <div style={{ fontSize: 10, opacity: 0.75, marginTop: 2 }}>
-                baseline {money(baseline!)} + revenue {money(revenue)} − operating expenses {money(opEx)}
-              </div>
+              <div style={{ fontSize: 10, opacity: 0.75, marginTop: 2 }}>{breakdown}</div>
+              {expenseDetail && <div style={{ fontSize: 10, opacity: 0.6 }}>{expenseDetail}</div>}
             </>
           ) : (
             <Spin size="small" />
           )}
         </div>
       </div>
-      <BaselineModal
-        open={editing}
-        draft={draft}
-        setDraft={setDraft}
-        onCancel={() => setEditing(false)}
-        onSave={saveBaseline}
-        saving={saving}
-      />
+      <BaselineModal open={editing} draft={draft} setDraft={setDraft} onCancel={() => setEditing(false)} onSave={saveBaseline} saving={saving} />
     </>
   );
 }
 
-// ── Baseline edit modal ───────────────────────────────────────────────
 function BaselineModal({
   open, draft, setDraft, onCancel, onSave, saving,
 }: {
-  open: boolean;
-  draft: number | null;
-  setDraft: (n: number | null) => void;
-  onCancel: () => void;
-  onSave: () => void;
-  saving: boolean;
+  open: boolean; draft: number | null; setDraft: (n: number | null) => void;
+  onCancel: () => void; onSave: () => void; saving: boolean;
 }) {
   return (
-    <Modal
-      open={open}
-      title="Set Cash-on-Hand Baseline"
-      onCancel={onCancel}
-      onOk={onSave}
-      confirmLoading={saving}
-      okText="Save"
-      destroyOnHidden
-    >
+    <Modal open={open} title="Set Cash-on-Hand Baseline" onCancel={onCancel} onOk={onSave} confirmLoading={saving} okText="Save" destroyOnHidden>
       <div className="space-y-3">
         <p className="text-sm text-gray-700">
-          The baseline is the till reading at the moment you flip the switch. Every
-          revenue and expense recorded after this point automatically adjusts Cash
-          on Hand. Reset only when you re-baseline the till.
+          The baseline is the till reading at the moment you flip the switch. Every revenue,
+          expense and stock purchase recorded after this point automatically adjusts Cash on Hand.
+          Reset only when you re-baseline the till.
         </p>
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">Baseline ($)</label>
-          <InputNumber
-            style={{ width: "100%" }}
-            value={draft ?? 0}
-            step={0.01}
-            prefix="$"
-            onChange={(v) => setDraft(v == null ? 0 : Number(v))}
-            autoFocus
-          />
+          <InputNumber style={{ width: "100%" }} value={draft ?? 0} step={0.01} prefix="$" onChange={(v) => setDraft(v == null ? 0 : Number(v))} autoFocus />
         </div>
       </div>
     </Modal>

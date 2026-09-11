@@ -16,6 +16,7 @@ import {
     getWalletSummary, topUpWallet, adjustWallet, getBonusTiers, previewBonus,
 } from "../../services/walletService";
 import { useAuth } from "../../context/AuthContext";
+import { createPayLink } from "../../services/onlinePaymentService";
 
 interface Props {
     open: boolean;
@@ -53,6 +54,11 @@ export default function WalletModal({ open, userId, userName, onClose, onBalance
     // Top-up form
     const [amount, setAmount] = useState<string>("");
     const [method, setMethod] = useState<"Cash" | "Whish" | "Card">("Cash");
+    // Online: create a MontyPay pay link for this amount and hand it to the
+    // customer (WhatsApp / copy). The wallet is credited when the callback lands.
+    const [linkBusy, setLinkBusy] = useState(false);
+    const [payLink, setPayLink] = useState<{ url: string; amount: number } | null>(null);
+    const [linkError, setLinkError] = useState<string | null>(null);
 
     // Admin adjust form
     const [showAdjust, setShowAdjust] = useState(false);
@@ -208,6 +214,39 @@ export default function WalletModal({ open, userId, userName, onClose, onBalance
                             >
                                 {busy ? "Saving…" : amt > 0 ? `Load ${money(amt + bonus.bonus)}` : "Load"}
                             </button>
+
+                            {/* Pay online — customer isn't here / wants to pay by card */}
+                            <button
+                                type="button"
+                                disabled={linkBusy || amt <= 0}
+                                onClick={async () => {
+                                    setLinkBusy(true); setLinkError(null);
+                                    try {
+                                        const p = await createPayLink({
+                                            amount: amt, purpose: "WalletTopUp", userId,
+                                            description: `Wallet top-up — ${userName || `Client #${userId}`}`,
+                                            customerName: userName || null, expiresInHours: 72,
+                                        });
+                                        setPayLink({ url: p.payUrl, amount: p.amount });
+                                    } catch (e: unknown) {
+                                        const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
+                                        setLinkError(msg ?? "Could not create the pay link.");
+                                    } finally { setLinkBusy(false); }
+                                }}
+                                className="mt-2 w-full h-9 rounded-lg border border-indigo-200 text-indigo-700 text-xs font-semibold hover:bg-indigo-50 disabled:opacity-50 transition"
+                            >
+                                {linkBusy ? "Creating link…" : "💳 Send a pay-online link instead"}
+                            </button>
+                            {linkError && <div className="mt-2 text-xs text-red-600">{linkError}</div>}
+                            {payLink && (
+                                <div className="mt-2 rounded-lg bg-indigo-50 border border-indigo-100 p-2.5 text-xs">
+                                    <div className="font-semibold text-indigo-800 mb-1">Link for {money(payLink.amount)} — wallet is credited automatically once paid</div>
+                                    <div className="flex items-center gap-2">
+                                        <code className="flex-1 break-all text-[11px] text-gray-700">{payLink.url}</code>
+                                        <button type="button" onClick={() => navigator.clipboard?.writeText(payLink.url)} className="px-2 h-7 rounded bg-indigo-600 text-white">Copy</button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Admin refund / correction */}

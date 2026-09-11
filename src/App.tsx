@@ -42,6 +42,8 @@ import SiteHome from "./pages/Site/SiteHome";
 import SiteMenu from "./pages/Site/SiteMenu";
 import SiteServices from "./pages/Site/SiteServices";
 import SiteEvents from "./pages/Site/SiteEvents";
+import PayPage from "./pages/Pay/PayPage";
+import OnlinePayments from "./pages/Admin/OnlinePayments";
 import SiteContact from "./pages/Site/SiteContact";
 import WebsiteContent from "./pages/Admin/WebsiteContent";
 import RolesManagement from "./pages/Admin/RolesManagement";
@@ -175,6 +177,11 @@ export default function App() {
             <Route path="/events/:eventKey" element={<EventRegistrationPage />} />
             <Route path="/events/:eventKey/paid" element={<EventRegistrationPage />} />
 
+            {/* Public pay page — the link AXIS hands out for anything paid
+                online. /result is where the gateway sends the customer back. */}
+            <Route path="/pay/:code" element={<PayPage />} />
+            <Route path="/pay/:code/result" element={<PayPage result />} />
+
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               {/* Dashboard home — role-based landing for signed-in staff */}
@@ -233,6 +240,7 @@ export default function App() {
               <Route path="/admin/expenses" element={<PageRoute page="expenses"><Expenses /></PageRoute>} />
               <Route path="/admin/expense-categories" element={<PageRoute page="expense-categories"><ExpenseCategories /></PageRoute>} />
               <Route path="/admin/wallets" element={<PageRoute page="wallets"><Wallets /></PageRoute>} />
+              <Route path="/admin/online-payments" element={<PageRoute page="online-payments"><OnlinePayments /></PageRoute>} />
               <Route path="/admin/loyalty/customers" element={<ProtectedRoute><LoyaltyCustomers /></ProtectedRoute>} />
               <Route path="/admin/loyalty/leaderboard" element={<ProtectedRoute><LoyaltyLeaderboard /></ProtectedRoute>} />
               <Route path="/admin/loyalty/draws" element={<ProtectedRoute><LoyaltyDraws /></ProtectedRoute>} />

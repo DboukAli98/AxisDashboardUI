@@ -46,13 +46,13 @@ import {
 
 import type { JournalEntry } from '../../services/accounting';
 // Add this import at the top with the other service imports
-import { backfillTransactions, backfillExpenses, BackfillResultDto } from '../../services/accountingService';
+import { backfillTransactions, backfillExpenses, BackfillResultDto, CashOnHandDto } from '../../services/accountingService';
 
 // Extra data sources for the owner-summary grid at the top of the page:
 //   - Inventory Valuation is the F&B ingredient stock value
 //   - Item Revenue Report exposes TCG stock buy / sell value at cost + retail
-// Cash on Hand is handled by CashOnHandCard which computes:
-//   cashOnHand = static baseline (IntegrationSettings) + revenue − opex
+// Cash on Hand is computed by the server (dashboard.cashOnHand):
+//   baseline (IntegrationSettings) + revenue − TOTAL expenses
 import { getInventoryValuation } from '../../services/inventoryValuationService';
 import { getItemRevenueReport } from '../../services/itemRevenueReportService';
 import CashOnHandCard from '../../components/dashboard/CashOnHandCard';
@@ -101,7 +101,12 @@ const AccountingDashboard: React.FC = () => {
       // dashboard load — they don't block each other, and we swallow their
       // individual failures so a hiccup on one doesn't blank the page.
       const invPromise = getInventoryValuation(fromIso, toIso).catch(() => null);
-      const itemReportPromise = getItemRevenueReport({ from: fromIso, to: toIso }).catch(() => null);
+      // Item report takes [from, to) instants — send the END of the last day
+      // so a picker value at 00:00 doesn't drop that day.
+      const itemReportPromise = getItemRevenueReport({
+        from: dateRange[0].startOf('day').toISOString(),
+        to: dateRange[1].endOf('day').toISOString(),
+      }).catch(() => null);
 
       const [dashboardData, trialBalance, entriesResult, inv, itemReport] = await Promise.all([
         getAccountingDashboard(fromIso, toIso),
@@ -323,6 +328,8 @@ const AccountingDashboard: React.FC = () => {
         <OwnerSummaryGrid
           fromIso={dateRange[0].toISOString()}
           toIso={dateRange[1].toISOString()}
+          cashOnHand={dashboard?.cashOnHand ?? null}
+          onBaselineSaved={loadDashboard}
           totalRevenue={totalRevenue}
           operatingExpenses={opEx?.total ?? 0}
           gamingRevenue={revenue?.gaming ?? 0}
@@ -1002,6 +1009,8 @@ interface OwnerSummaryGridProps {
   // Used by the CashOnHandCard to fetch revenue + opex if not overridden.
   fromIso: string;
   toIso: string;
+  cashOnHand: CashOnHandDto | null;
+  onBaselineSaved: () => void;
   totalRevenue: number;
   operatingExpenses: number;
   gamingRevenue: number;
@@ -1047,8 +1056,8 @@ const OwnerSummaryGrid: React.FC<OwnerSummaryGridProps> = (p) => {
           fromIso={p.fromIso}
           toIso={p.toIso}
           mode="full"
-          revenueOverride={p.totalRevenue}
-          operatingExpensesOverride={p.operatingExpenses}
+          cashOverride={p.cashOnHand}
+          onBaselineSaved={p.onBaselineSaved}
         />
 
         {/* Row 2 — Total Revenue | Operating Expenses | Net Income */}

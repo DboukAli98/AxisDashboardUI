@@ -40,6 +40,17 @@ export type CogsSummaryDto = {
   foodCostPercent?: number | null;
 };
 
+export type CashOnHandDto = {
+  baseline: number;
+  revenue: number;
+  operatingExpenses: number;
+  capitalExpenses: number;
+  otherCashOut: number;
+  stockPurchases: number;
+  totalExpenses: number;
+  amount: number;
+};
+
 export type AccountingDashboardDto = {
   from: string | null;
   to: string | null;
@@ -50,6 +61,8 @@ export type AccountingDashboardDto = {
   grossProfit: number;
   netIncome: number;
   netMarginPercent: number;
+  // Baseline + revenue − TOTAL expenses, computed server-side.
+  cashOnHand?: CashOnHandDto | null;
 };
 
 export type BackfillResultDto = {

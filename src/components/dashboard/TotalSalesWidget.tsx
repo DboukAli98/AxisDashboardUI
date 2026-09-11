@@ -284,10 +284,18 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
                 <div className="bg-white/10 rounded-lg p-4">
                     <p className="text-xs opacity-75 mb-1">Total Amount</p>
                     <p className="text-2xl font-bold">${data?.totalAmount.toFixed(2) || '0.00'}</p>
+                    {!!data?.eventsAmount && data.eventsAmount > 0 && (
+                        <p className="text-[11px] opacity-80 mt-1">
+                            incl. 🎟 ${data.eventsAmount.toFixed(2)} event tickets
+                        </p>
+                    )}
                 </div>
                 <div className="bg-white/10 rounded-lg p-4">
                     <p className="text-xs opacity-75 mb-1">Orders Count</p>
                     <p className="text-2xl font-bold">{data?.ordersCount || 0}</p>
+                    {!!data?.eventsCount && data.eventsCount > 0 && (
+                        <p className="text-[11px] opacity-80 mt-1">incl. {data.eventsCount} ticket{data.eventsCount > 1 ? 's' : ''}</p>
+                    )}
                 </div>
             </div>
 

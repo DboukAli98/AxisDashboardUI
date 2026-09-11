@@ -92,6 +92,7 @@ export const PAGES: PageDef[] = [
 
   { key: "accounting", label: "Dashboard", group: "Accounting", path: "/accounting", legacyRoles: [] },
   { key: "accounting-item-revenue", label: "Item Revenue", group: "Accounting", path: "/accounting/item-revenue", legacyRoles: [] },
+  { key: "online-payments", label: "Online Payments", group: "Accounting", path: "/admin/online-payments", legacyRoles: [] },
   { key: "accounting-accounts", label: "Chart of Accounts", group: "Accounting", path: "/accounting/accounts", legacyRoles: [] },
   { key: "accounting-trial-balance", label: "Trial Balance", group: "Accounting", path: "/accounting/trial-balance", legacyRoles: [] },
   { key: "accounting-ledger", label: "General Ledger", group: "Accounting", path: "/accounting/general-ledger", legacyRoles: [] },

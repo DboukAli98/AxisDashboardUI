@@ -5,7 +5,9 @@ import { getDailySales, DailySalesData } from "../../../services/transactionServ
 import { getCategories, CategoryDto } from "../../../services/categoryService";
 import Loader from "../../ui/Loader";
 
-type DateFilter = 'today' | 'yesterday' | '3days' | '2weeks' | 'month';
+type DateFilter = 'today' | 'yesterday' | '3days' | '2weeks' | 'month' | 'custom';
+
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 type CategoryType = 'all' | 'item' | 'game';
 
 interface DailySalesChartProps {
@@ -19,6 +21,9 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [dateFilter, setDateFilter] = useState<DateFilter>('month');
+    // Custom range (yyyy-mm-dd) — applied when dateFilter === 'custom'.
+    const [customFrom, setCustomFrom] = useState<string>(() => ymd(new Date(Date.now() - 6 * 86400000)));
+    const [customTo, setCustomTo] = useState<string>(() => ymd(new Date()));
 
     // Load categories on mount based on categoryType
     useEffect(() => {
@@ -83,6 +88,16 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
                 // Last 2 weeks: 14 days ago at 00:00:00 to end of today
                 from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 14, 0, 0, 0, 0));
                 break;
+            case 'custom': {
+                // Custom: the two date inputs, whole days, UTC like the presets.
+                const [fy, fm, fd] = customFrom.split('-').map(Number);
+                const [ty, tm, td] = customTo.split('-').map(Number);
+                if (!fy || !ty) { setLoading(false); return; }
+                from = new Date(Date.UTC(fy, fm - 1, fd, 0, 0, 0, 0));
+                to = new Date(Date.UTC(ty, tm - 1, td, 23, 59, 59, 999));
+                if (to < from) { setLoading(false); setError('"From" must be before "To".'); return; }
+                break;
+            }
             case 'month':
             default:
                 // Last month: 30 days ago at 00:00:00 to end of today
@@ -112,7 +127,7 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
         return () => {
             mounted = false;
         };
-    }, [dateFilter, selectedCategories]);
+    }, [dateFilter, selectedCategories, customFrom, customTo]);
 
     // Prepare chart data
     const categories = salesData.map((d) => {
@@ -127,10 +142,12 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
 
     const itemsData = salesData.map((d) => d.itemsTotal);
     const gamesData = salesData.map((d) => d.gamesTotal);
+    const eventsData = salesData.map((d) => d.eventsTotal ?? 0);
     const grandTotalData = salesData.map((d) => d.grandTotal);
+    const hasEvents = eventsData.some((v) => v > 0);
 
     const options: ApexOptions = {
-        colors: ["#3b82f6", "#10b981", "#6366f1"],
+        colors: categoryType === 'all' && hasEvents ? ["#3b82f6", "#10b981", "#f59e0b", "#6366f1"] : ["#3b82f6", "#10b981", "#6366f1"],
         chart: {
             fontFamily: "Outfit, sans-serif",
             type: "bar",
@@ -214,6 +231,13 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
             });
         }
 
+        if (categoryType === 'all' && hasEvents) {
+            result.push({
+                name: "Event Tickets",
+                data: eventsData,
+            });
+        }
+
         if (categoryType === 'all') {
             result.push({
                 name: "Total Sales",
@@ -224,28 +248,13 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
         return result;
     })();
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-20">
-                <Loader />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="text-red-600 bg-red-50 p-4 rounded">
-                {error}
-            </div>
-        );
-    }
-
     const filterButtons: { value: DateFilter; label: string }[] = [
         { value: 'today', label: 'Today' },
         { value: 'yesterday', label: 'Yesterday' },
         { value: '3days', label: 'Last 3 Days' },
         { value: '2weeks', label: 'Last 2 Weeks' },
         { value: 'month', label: 'Last Month' },
+        { value: 'custom', label: 'Custom' },
     ];
 
     const toggleCategory = (categoryId: number) => {
@@ -265,7 +274,7 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
         }
 
         // Create CSV content
-        const headers = ['Date', 'Items Sales ($)', 'Games Sales ($)', 'Total Sales ($)'];
+        const headers = ['Date', 'Items Sales ($)', 'Games Sales ($)', 'Event Tickets ($)', 'Total Sales ($)'];
         const rows = salesData.map((d) => {
             const date = new Date(d.date);
             const formattedDate = date.toLocaleDateString('en-US', {
@@ -278,9 +287,12 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
                 formattedDate,
                 d.itemsTotal.toFixed(2),
                 d.gamesTotal.toFixed(2),
+                (d.eventsTotal ?? 0).toFixed(2),
                 d.grandTotal.toFixed(2),
             ];
         });
+        const sum = (f: (d: DailySalesData) => number) => salesData.reduce((a, d) => a + f(d), 0);
+        rows.push(['TOTAL', sum(d => d.itemsTotal).toFixed(2), sum(d => d.gamesTotal).toFixed(2), sum(d => d.eventsTotal ?? 0).toFixed(2), sum(d => d.grandTotal).toFixed(2)]);
 
         const csvContent = [
             headers.join(','),
@@ -292,7 +304,7 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
 
-        const filterLabel = filterButtons.find(b => b.value === dateFilter)?.label || 'Data';
+        const filterLabel = dateFilter === 'custom' ? `${customFrom}_to_${customTo}` : (filterButtons.find(b => b.value === dateFilter)?.label || 'Data');
         link.setAttribute('href', url);
         link.setAttribute('download', `Daily_Sales_${filterLabel.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
@@ -309,7 +321,7 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
                     {filterButtons.map((btn) => (
                         <button
                             key={btn.value}
-                            onClick={() => setDateFilter(btn.value)}
+                            onClick={() => { setError(null); setDateFilter(btn.value); }}
                             className={`px-4 py-2 rounded-lg font-medium transition-colors ${dateFilter === btn.value
                                 ? 'bg-indigo-600 text-white shadow-md'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -318,6 +330,25 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
                             {btn.label}
                         </button>
                     ))}
+                    {dateFilter === 'custom' && (
+                        <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
+                            <input
+                                type="date"
+                                value={customFrom}
+                                max={customTo}
+                                onChange={(e) => setCustomFrom(e.target.value)}
+                                className="h-10 px-3 rounded-lg border border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                            />
+                            <span className="text-gray-400 text-sm">→</span>
+                            <input
+                                type="date"
+                                value={customTo}
+                                min={customFrom}
+                                onChange={(e) => setCustomTo(e.target.value)}
+                                className="h-10 px-3 rounded-lg border border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <button
@@ -339,7 +370,7 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
                         Filter by {categoryType === 'item' ? 'F&B' : 'Item'} Category:
                     </h3>
                     <div className="flex flex-wrap gap-3">
-                        {itemCategories.map((cat) => (
+                        {itemCategories.filter((cat) => (cat.name || '').trim() !== '').map((cat) => (
                             <label
                                 key={cat.id}
                                 className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 rounded-md cursor-pointer hover:shadow-md transition-shadow"
@@ -371,11 +402,17 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
             )}
 
             {/* Chart */}
-            <div className="max-w-full overflow-x-auto custom-scrollbar">
-                <div id="dailySalesChart" className="min-w-[1000px]">
-                    <Chart options={options} series={series} type="bar" height={350} />
+            {loading ? (
+                <div className="flex justify-center items-center py-20"><Loader /></div>
+            ) : error ? (
+                <div className="text-red-600 bg-red-50 p-4 rounded">{error}</div>
+            ) : (
+                <div className="max-w-full overflow-x-auto custom-scrollbar">
+                    <div id="dailySalesChart" className="min-w-[1000px]">
+                        <Chart options={options} series={series} type="bar" height={350} />
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
