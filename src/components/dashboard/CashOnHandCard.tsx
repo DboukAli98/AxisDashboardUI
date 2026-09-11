@@ -1,9 +1,9 @@
 // CashOnHandCard
 // ==============
-// Rami's spec (2026-09):
-//   cashOnHand = baseline + revenue in period − TOTAL expenses in period
-// where TOTAL expenses = operating + capital + other cash-out manual entries
-// (owner draws…) + stock purchases. The number is computed by the server
+// Rami's spec (2026-09-11):
+//   cashOnHand = baseline + TOTAL revenue (all time) − TOTAL expenses (all time)
+// Total expenses = the "Total Expenses (All)" figure on the Expenses page.
+// The date filter does not touch it. Computed by the server
 // (AccountingDashboardDto.cashOnHand) so every screen shows the same figure.
 //
 // The baseline is a one-shot till reading the owner types in once; it lives
@@ -33,7 +33,7 @@ interface Props {
 const money = (n: number) =>
   `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const FORMULA = "Baseline + revenue in period − TOTAL expenses in period (operating + capital + owner draws + stock purchases). Baseline is the till reading you set once.";
+const FORMULA = "Baseline + TOTAL revenue since day one (paid sales + paid event tickets) − TOTAL expenses since day one (the \"Total Expenses (All)\" figure on the Expenses page). Not affected by the date filter.";
 
 export default function CashOnHandCard({ fromIso, toIso, mode = "compact", cashOverride, onBaselineSaved }: Props) {
   const [data, setData] = useState<CashOnHandDto | null>(cashOverride ?? null);
@@ -73,16 +73,9 @@ export default function CashOnHandCard({ fromIso, toIso, mode = "compact", cashO
   const isReady = !!data && !loading;
 
   const breakdown = data
-    ? `baseline ${money(data.baseline)} + revenue ${money(data.revenue)} − expenses ${money(data.totalExpenses)}`
+    ? `baseline ${money(data.baseline)} + total revenue ${money(data.revenue)} − total expenses ${money(data.totalExpenses)}`
     : "";
-  const expenseDetail = data
-    ? [
-        data.operatingExpenses > 0 ? `opex ${money(data.operatingExpenses)}` : null,
-        data.capitalExpenses > 0 ? `capital ${money(data.capitalExpenses)}` : null,
-        data.otherCashOut > 0 ? `draws/other ${money(data.otherCashOut)}` : null,
-        data.stockPurchases > 0 ? `stock purchases ${money(data.stockPurchases)}` : null,
-      ].filter(Boolean).join(" · ")
-    : "";
+  const expenseDetail = "all time · not affected by the date filter";
 
   if (mode === "compact") {
     return (
